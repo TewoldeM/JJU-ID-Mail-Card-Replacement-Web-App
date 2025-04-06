@@ -1,0 +1,156 @@
+Authentication Logic Overview in JJU ID-Mail Card Management System
+This document outlines the authentication flow in our Next.js application, detailing how the sign-in,
+sign-up, middleware, user info endpoint, and authentication context work together to manage user sessions securely and reliably. 
+The system uses JWT tokens stored in httpOnly cookies, validated server-side, and integrates with a Prisma database for user management.
+Key Components and Their Roles
+/api/auth/signin/route.ts (Sign-In Endpoint)
+Purpose: Authenticates a user based on their email and password, generates JWT tokens, and sets them as cookies.
+Flow:
+Receives email and password from the client via a POST request.
+Validates the credentials against the database (Prisma user.findUnique).
+Checks for account lockout (e.g., too many failed attempts).
+If valid, generates:
+Access Token: A JWT with a 1-hour expiration (exp), signed with JWT_SECRET.
+Refresh Token: A JWT with a 7-day expiration, signed with REFRESH_TOKEN_SECRET.
+Sets both tokens as httpOnly cookies in the response:
+typescript
+Wrap
+Copy
+response.cookies.set("token", token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+  sameSite: "strict",
+  maxAge: 60 * 60, // 1 hour
+});
+response.cookies.set("refreshToken", refreshToken, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+  sameSite: "strict",
+  maxAge: 7 * 24 * 60 * 60, // 7 days
+});
+Returns a JSON response with user data and tokens.
+Key Points:
+httpOnly: true ensures the tokens are inaccessible to client-side JavaScript, enhancing security against XSS attacks.
+The maxAge aligns with the token expiration times for consistency.
+/api/auth/signup/route.ts (Sign-Up Endpoint)
+Purpose: Registers a new user, assigns a default "STUDENT" role, and generates tokens like sign-in.
+Flow:
+Receives user details (FirstName, LastName, password, studentId, email, year) via POST.
+Validates input and checks for duplicate studentId or email.
+Creates a new user in the database with a hashed password (using argon2).
+Assigns the "STUDENT" role (creates it if it doesn’t exist).
+Generates access and refresh tokens (same as sign-in) and sets them as httpOnly cookies.
+Returns a success response with user data and tokens.
+Key Points:
+Mirrors the sign-in token generation logic for consistency.
+Initializes user settings (e.g., theme, language) in the database.
+middleware.ts (Route Protection)
+Purpose: Protects specific routes (e.g., /admin/*, /dashboard/*) by validating the user’s token and roles.
+Flow:
+Extracts the token from the request cookies (req.cookies.get("token")).
+Skips validation for unprotected routes (/sign-in, /sign-up).
+If no token exists, redirects to /sign-in.
+Validates the token by calling /api/auth/me:
+typescript
+Wrap
+Copy
+const response = await fetch(`${req.nextUrl.origin}/api/auth/me`, {
+  headers: { Authorization: `Bearer ${token}` },
+  credentials: "include",
+});
+If the token is invalid (e.g., expired), redirects to /sign-in.
+Checks if the user has the "ADMIN" role; if not, redirects to /unauthorized.
+Allows the request to proceed if all checks pass.
+Key Points:
+Runs server-side, so it can access httpOnly cookies.
+Relies on /api/auth/me for token validation, ensuring a single source of truth.
+/api/auth/me/route.ts (User Info Endpoint)
+Purpose: Validates the token and returns the authenticated user’s data.
+Flow:
+Retrieves the token from cookies (req.cookies.get("token")).
+If no token, returns 401 Unauthorized.
+Verifies the token using jwtVerify from jose:
+typescript
+Wrap
+Copy
+const { payload } = await jwtVerify(token, secret, { clockTolerance: 30 });
+Extracts the user ID from the token payload and fetches user data from Prisma.
+Returns the user’s id, email, and roles in a JSON response.
+Handles errors (e.g., JWTExpired) with specific status codes and messages.
+Key Points:
+Acts as the central validation point for the token, used by both middleware and AuthContext.
+clockTolerance: 30 accounts for minor clock skew between client and server.
+AuthContext.tsx (Client-Side Authentication State)
+Purpose: Manages the client-side authentication state (isAuthenticated, user) and provides login/logout functionality.
+Flow:
+Initialization (useEffect):
+On page load, calls /api/auth/me with credentials: "include to send cookies:
+typescript
+Wrap
+Copy
+const response = await fetch("/api/auth/me", { credentials: "include" });
+If successful, sets isAuthenticated to true and user to the response data.
+If unsuccessful (e.g., no token or expired), sets isAuthenticated to false.
+Login:
+Sets cookies manually (for consistency, though the API already sets them):
+typescript
+Wrap
+Copy
+document.cookie = `token=${token}; path=/; secure=${process.env.NODE_ENV === "production"}; sameSite=strict; max-age=${60 * 60}`;
+Updates state to reflect the user is logged in.
+Logout:
+Deletes cookies and resets state, redirecting to /sign-in.
+Key Points:
+Does not read the token directly (since it’s httpOnly), relying on the server to validate it.
+Uses credentials: "include" to ensure the browser sends the httpOnly cookies to /api/auth/me.
+How It All Works Together
+User Journey
+Sign-Up or Sign-In:
+User submits credentials to /api/auth/signup or /api/auth/signin.
+Server validates the input, generates tokens, and sets them as httpOnly cookies.
+Client receives a success response and calls login in AuthContext to update state.
+Page Load or Refresh:
+AuthContext runs its useEffect, calling /api/auth/me with cookies included.
+Server validates the token and returns user data.
+AuthContext updates isAuthenticated and user, rendering the appropriate UI (e.g., logged-in navbar).
+Accessing Protected Routes:
+User navigates to /dashboard/* or /admin/*.
+middleware.ts intercepts the request, checks the token via /api/auth/me, and enforces role-based access (e.g., only "ADMIN" for /admin/*).
+If valid, the page renders; if not, the user is redirected.
+Logout:
+User clicks logout, triggering AuthContext.logout().
+Cookies are cleared, state is reset, and the user is redirected to /sign-in.
+Data Flow
+Cookies:
+Set by /api/auth/signin and /api/auth/signup.
+Sent automatically with requests to /api/auth/me and protected routes (via credentials: "include" or server-side req.cookies).
+Token Validation:
+Handled exclusively by /api/auth/me, ensuring consistency across middleware and client-side checks.
+State Management:
+AuthContext reflects the server’s validation result, keeping the UI in sync.
+Why httpOnly Cookies Work This Way
+Security: httpOnly: true prevents client-side JavaScript from accessing the token, reducing the risk of XSS attacks stealing it.
+Challenge: Originally, AuthContext tried to read the token client-side with Cookies.get("token"), which failed because of httpOnly.
+Solution: Shifted to server-side validation via /api/auth/me. The client sends the cookie in requests, and the server does the heavy lifting.
+Potential Extensions
+Refresh Token Logic:
+Add /api/auth/refresh to renew the access token when it expires (using the refresh token).
+Update AuthContext to call this endpoint on 401 responses from /api/auth/me.
+Error Handling:
+Enhance UI feedback for expired tokens (e.g., prompt to re-login).
+Role-Based Rendering:
+Use user.roles from AuthContext to conditionally render components based on permissions.
+Debugging Tips
+Logs: Check console logs in /api/auth/signin, /api/auth/me, middleware.ts, and AuthContext.tsx to trace token flow.
+Browser DevTools: Use the "Application" tab > "Cookies" to verify token and refreshToken presence and expiration.
+Token Expiry: Decode tokens (e.g., jwt.io) to confirm exp timestamps align with maxAge.
+Summary
+Sign-In/Sign-Up: Generate and set tokens as httpOnly cookies.
+Middleware: Protects routes by validating tokens server-side.
+/api/auth/me: Validates tokens and provides user data.
+AuthContext: Manages client-side state by querying the server, not reading cookies directly.
+This architecture ensures security (via httpOnly) and reliability (via server-side validation), making our authentication system robust and scalable. Let me know if you need clarification or help with extensions!
+
+This note should give your team a clear picture of the authentication logic and how the components interact. Let me know if you’d like to adjust or add anything!

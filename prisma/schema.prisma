@@ -1,0 +1,197 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  Id                   String         @id @default(uuid())
+  FirstName            String
+  LastName             String
+  Password             String
+  PhoneNumber          String         @unique
+  Year                 String
+  StudentId            String         @unique // 4-digit student ID
+  Email                String         @unique
+  Collage              String?
+  Department           String?
+  Program              String? // Optional field for program of study
+  Card                 Card?
+  ResetToken           String? // For Email verification
+  ResetTokenExpires    DateTime? // Expiration time for Email verification token
+  Roles                Role[]         @relation("UserRoles")
+  CreatedAt            DateTime       @default(now())
+  FailedLoginAttempts  Int            @default(0)
+  IsLocked             Boolean        @default(false)
+  LockUntil            DateTime?
+  Applications         Application[]  @relation("ApplicationStudent")
+  Notifications        Notification[]
+  Settings             UserSetting?
+  PasswordResetToken   String? // For forgot password functionality
+  PasswordResetExpires DateTime? // Expiration time for password reset token
+
+  @@index([Email])
+}
+
+model UserSetting {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [Id])
+  theme                String   @default("light")
+  language             String   @default("en")
+  notificationsEnabled Boolean  @default(true)
+  profilePicture       File?    @relation(name: "UserSettingProfilePicture")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model File {
+  id            String       @id @default(cuid())
+  fileName      String
+  fileType      String
+  fileSize      Int
+  filePath      String
+  fileCategory  String       @default("OTHER")
+  application   Application? @relation(name: "ApplicationAttachment", fields: [applicationId], references: [id])
+  applicationId String?      @unique
+  userSetting   UserSetting? @relation(name: "UserSettingProfilePicture", fields: [userSettingId], references: [id])
+  userSettingId String?      @unique
+  createdAt     DateTime     @default(now())
+}
+
+model Role {
+  id          String       @id @default(uuid())
+  name        String       @default("STUDENT") // Roles: "Student", "Admin"
+  description String?
+  permissions Permission[]
+  users       User[]       @relation("UserRoles")
+  createdAt   DateTime     @default(now())
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  roleId      String
+  role        Role     @relation(fields: [roleId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Card {
+  id         String   @id @default(cuid())
+  StudentId  String   @unique
+  user       User     @relation(fields: [StudentId], references: [Id])
+  cardType   CardType @default(ID_CARD)
+  cardNumber String   @unique
+  expiryDate DateTime
+  status     Status   @default(ACTIVE)
+}
+
+enum CardType {
+  ID_CARD
+  MAIL_CARD
+}
+
+model Application {
+  id              String          @id @default(cuid())
+  StudentId       String // Reference the 4-digit StudentId from User
+  applicationType ApplicationType
+  status          Status          @default(PENDING)
+  reason          String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  resolvedAt      DateTime?
+  feedback        String?
+  approvalCode    String?
+  Collage         String
+  Department      String
+  Program         String
+  user            User            @relation(name: "ApplicationStudent", fields: [StudentId], references: [StudentId]) // Changed to reference User.StudentId
+  notifications   Notification[]  @relation("ApplicationNotifications")
+  files           File[]          @relation(name: "ApplicationAttachment")
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([applicationType])
+  @@index([StudentId])
+}
+
+enum Decision {
+  APPROVED
+  REJECTED
+}
+
+enum Status {
+  PENDING
+  ACCEPTED
+  REJECTED
+  ACTIVE
+}
+
+enum FileCategory {
+  PROFILE_PICTURE
+  ID_PROOF
+  PHOTOGRAPH
+  OTHER
+}
+
+enum ApplicationType {
+  ID_CARD_REPLACEMENT
+  MAIL_CARD_REPLACEMENT
+}
+
+model Notification {
+  id           String        @id @default(cuid())
+  StudentId    String
+  user         User          @relation(fields: [StudentId], references: [StudentId])
+  message      String
+  link         String? // Link to the application (optional)
+  read         Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  applications Application[] @relation("ApplicationNotifications")
+}
+
+model MonthlyHistory {
+  id        String   @id @default(cuid())
+  day       Int
+  month     Int
+  year      Int // Format: YYYY-MM (e.g., "2025-01")
+  Total     Int      @default(0) // Total applications submitted in the year
+  Pending   Int      @default(0) // Pending applications in the year
+  Accepted  Int      @default(0) // Approved applications in the year
+  Rejected  Int      @default(0) // Rejected applications in the year
+  createdAt DateTime @default(now())
+
+  @@unique([day, month, year])
+}
+
+model YearlyHistory {
+  id        String   @id @default(cuid())
+  month     Int
+  year      Int // Format: YYYY (e.g., "2025")
+  Total     Int      @default(0) // Total applications submitted in the year
+  Pending   Int      @default(0) // Pending applications in the year
+  Accepted  Int      @default(0) // Approved applications in the year
+  Rejected  Int      @default(0) // Rejected applications in the year
+  createdAt DateTime @default(now())
+
+  @@unique([month, year])
+}
+
+model ValidStudent {
+  Id          String   @id @default(uuid())
+  FirstName   String
+  LastName    String
+  StudentId   String   @unique // Unique identifier for the student (e.g., JJU student ID)
+  PhoneNumber String // Optional phone number (matches User.phoneNumber format)
+  Year        String        
+  Email       String  @unique // Optional Email, can be used for validation
+  CreatedAt   DateTime @default(now())
+  UpdatedAt   DateTime @updatedAt
+
+  @@index([StudentId, Email]) // Indexes for faster lookups
+}
