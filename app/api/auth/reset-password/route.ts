@@ -103,4 +103,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-//git commit -m "Manage Student for the admin Delete user, Blocke user, Unblock user,"
+//git commit -m "App-in Notification for the student when the password is changed, Submit application form, accepted, rejected, and approved there application"
