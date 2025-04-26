@@ -27,6 +27,8 @@ model User {
   FailedLoginAttempts  Int            @default(0)
   IsLocked             Boolean        @default(false)
   LockUntil            DateTime?
+  IsBlocked            Boolean        @default(false) // Permanent block (admin action)
+  deletedAt            DateTime?      // Soft deletion
   Applications         Application[]  @relation("ApplicationStudent")
   Notifications        Notification[]
   Settings             UserSetting?
@@ -118,7 +120,18 @@ model Application {
   @@index([applicationType])
   @@index([StudentId])
 }
-
+model PendingApplication {
+  id               String   @id @default(cuid())
+  StudentId        String
+  applicationType  ApplicationType
+  reason           String
+  Collage          String
+  Department       String
+  Program          String
+  verificationToken String   @unique
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+}
 enum Decision {
   APPROVED
   REJECTED

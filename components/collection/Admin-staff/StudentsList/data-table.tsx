@@ -1,6 +1,4 @@
-// components/collection/Admin-staff/data-table.tsx
 "use client";
-
 import {
   ColumnDef,
   flexRender,
@@ -10,7 +8,6 @@ import {
   getSortedRowModel,
   SortingState,
 } from "@tanstack/react-table";
-
 import {
   Table,
   TableBody,
@@ -40,30 +37,29 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    state: {
-      sorting,
-    },
+    state: { sorting },
   });
 
   return (
-    <div>
-      <div className="rounded-md border">
-        <Table>
+    <div className="w-full overflow-x-auto">
+      <div className="rounded-md border w-full min-w-full">
+        <Table className="w-full table-auto">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id} className="text-left">
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className="text-left whitespace-nowrap"
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
@@ -75,7 +71,10 @@ export function DataTable<TData, TValue>({
                   data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="text-left py-2">
+                    <TableCell
+                      key={cell.id}
+                      className="text-left py-2 whitespace-nowrap"
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -118,4 +117,4 @@ export function DataTable<TData, TValue>({
     </div>
   );
 }
- 
+

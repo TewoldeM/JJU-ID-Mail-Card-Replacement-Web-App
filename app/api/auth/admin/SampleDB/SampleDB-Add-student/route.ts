@@ -1,84 +1,77 @@
-// /api/admin/add-student/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import { jwtVerify, JWTPayload } from "jose";
+import { NextResponse } from "next/server";
+import prisma from "@/app/lib/client";
 
-const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || "A5xj97s5GiJHD0518ZI02XjZPQU328";
-
-export async function POST(req: NextRequest) {
-  const token = req.cookies.get("token")?.value;
-  console.log("Token from cookies in /api/admin/add-student:", token); // Debugging log
-
-  if (!token) {
-    return NextResponse.json(
-      { error: "Unauthorized. Admins only." },
-      { status: 401 }
-    );
-  }
-
+export async function POST(request: Request) {
   try {
-    const secret = new TextEncoder().encode(JWT_SECRET);
-    const { payload } = await jwtVerify(token, secret, { clockTolerance: 1 });
-    const userRoles = (payload as JWTPayload & { Roles: string[] }).Roles || [];
+    const { FirstName, LastName, StudentId, PhoneNumber, Email, Year } =
+      await request.json();
 
-    // Check if the user has the ADMIN role
-    if (!userRoles.includes("ADMIN")) {
+    // required fields
+    if (!FirstName || !LastName || !StudentId || !Email || !Year) {
       return NextResponse.json(
-        { error: "Unauthorized. Admins only." },
-        { status: 401 }
+        {
+          error: "FirstName, LastName, StudentId, Email and Year are required.",
+        },
+        { status: 400 }
       );
     }
-
-
-    const { FirstName, LastName, StudentId, PhoneNumber, Email } = await req.json();
-
-    // Validate required fields
-    if (!FirstName || !LastName || !StudentId) {
+    // Validate StudentId as a 4-digit number
+    if (!/^\d{4}$/.test(StudentId)) {
       return NextResponse.json(
-        { error: "First name, last name, and student ID are required" },
+        { error: "Student ID must be a 4-digit number" },
+
         { status: 400 }
       );
     }
 
-
-    // Check if StudentId or email already exists
-    const existingStudent = await prisma.validStudent.findFirst({
+    // Optional phone number validation
+    if (PhoneNumber && !/^\d{10}$/.test(PhoneNumber)) {
+      return NextResponse.json(
+        { error: "Phone number must be 10 digits" },
+        { status: 400 }
+      );
+    }
+    // Validate Year as exactly two digits
+    if (!/^\d{2}$/.test(Year)) {
+      return NextResponse.json(
+        { error: "Year must be exactly two digits (e.g., 25)." },
+        { status: 400 }
+      );
+    }
+    // uniqueness check
+    const existing = await prisma.validStudent.findFirst({
       where: {
-
         OR: [{ StudentId }, { Email }],
       },
     });
-
-    if (existingStudent) {
+    if (existing) {
       return NextResponse.json(
-
-        { error: "Student ID or email already exists" },
-        { status: 400 }
+        { error: "A student with that StudentId or Email already exists." },
+        { status: 409 }
       );
     }
 
-    // Create the new student in the ValidStudent table
-    const newStudent = await prisma.validStudent.create({
+    // create record
+    await prisma.validStudent.create({
       data: {
         FirstName,
         LastName,
         StudentId,
-        PhoneNumber: PhoneNumber, // Use PhoneNumber to match Prisma schema
+        PhoneNumber: PhoneNumber || "",
         Email,
+        Year,
       },
     });
 
     return NextResponse.json(
-      { message: "Student added successfully", student: newStudent },
+      { message: "Student created successfully." },
       { status: 201 }
     );
-  } catch (error) {
-    console.error("Error adding student:", error);
+  } catch (err) {
+    console.error("Error creating student:", err);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error." },
       { status: 500 }
     );
   }
-
 }

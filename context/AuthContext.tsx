@@ -25,7 +25,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }>=({children,})
   const router = useRouter();
 
   const login = (token: string, refreshToken: string) => {
-    console.log( "Logging in with token:", token, "and refreshToken:", refreshToken);
+    // console.log( "Logging in with token:", token, "and refreshToken:", refreshToken);
     Cookies.set("token", token, { path: "/",secure: process.env.NODE_ENV === "production",expires: 1 / 24, // 1 hour
       sameSite: "lax",    });
     Cookies.set("refreshToken", refreshToken, { path: "/", secure: process.env.NODE_ENV === "production", expires: 7, // 7 days
@@ -33,9 +33,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }>=({children,})
     // Fallback to localStorage
     localStorage.setItem("token", token);
     localStorage.setItem("refreshToken", refreshToken);
-    console.log("Cookies set, verifying...");
-    console.log("Token cookie after set:", Cookies.get("token"));
-    console.log("Refresh token cookie after set:", Cookies.get("refreshToken"));
+    // console.log("Cookies set, verifying...");
+    // console.log("Token cookie after set:", Cookies.get("token"));
+    // console.log("Refresh token cookie after set:", Cookies.get("refreshToken"));
     setToken(token);
     setRefreshToken(refreshToken);
     setIsAuthenticated(true);
@@ -59,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }>=({children,})
     const storedRefreshToken =
       Cookies.get("refreshToken") || localStorage.getItem("refreshToken");
     if (!storedRefreshToken) {
-      console.log("No refresh token available for refresh");
+      // console.log("No refresh token available for refresh");
       return false;
     }
 

@@ -1,22 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, ApplicationType } from "@prisma/client";
 import { jwtVerify, JWTPayload } from "jose";
+import { randomBytes } from "crypto";
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "A5xj97s5GiJHD0518ZI02XjZPQU328";
 
 export async function POST(req: NextRequest) {
-  console.log("Received POST request to /api/applications/CardReplacment");
+  console.log("Received POST request to /api/applications");
 
   const authHeader = req.headers.get("Authorization");
-  console.log("Authorization Header:", authHeader);
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     console.log("No valid Authorization header found");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const token = authHeader.split(" ")[1];
-  console.log("Token extracted:", token);
   if (!token || token.trim() === "") {
     console.log("Token is empty or invalid");
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
@@ -52,9 +51,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    console.log("Request body:", body);
     if (!body || typeof body !== "object") {
-      console.log("Invalid request body:", body);
       return NextResponse.json(
         { error: "Invalid request body" },
         { status: 400 }
@@ -63,7 +60,6 @@ export async function POST(req: NextRequest) {
 
     let { Reason, applicationType, Collage, Department, Program } = body;
     if (!Reason || !applicationType) {
-      console.log("Missing required fields: Reason or applicationType");
       return NextResponse.json(
         { error: "Reason and application type are required" },
         { status: 400 }
@@ -74,12 +70,10 @@ export async function POST(req: NextRequest) {
     try {
       user = await prisma.user.findUnique({ where: { Id: userId } });
       if (!user) {
-        console.log("User not found for ID:", userId);
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
       console.log("Authenticated user:", user);
     } catch (userError) {
-      console.error("Error fetching user:", userError);
       return NextResponse.json(
         { error: "Failed to fetch user" },
         { status: 500 }
@@ -107,7 +101,6 @@ export async function POST(req: NextRequest) {
       }
       console.log("Validated student:", validStudent);
     } catch (studentError) {
-      console.error("Error validating student:", studentError);
       return NextResponse.json(
         { error: "Failed to validate student" },
         { status: 500 }
@@ -117,11 +110,10 @@ export async function POST(req: NextRequest) {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
+    const currentDay = now.getDate();
 
-    // Check application limits per type
     let existingIdApplications, existingMailApplications;
     try {
-      console.log("Checking application limits...");
       existingIdApplications = await prisma.application.count({
         where: {
           StudentId: user.StudentId,
@@ -142,16 +134,7 @@ export async function POST(req: NextRequest) {
           },
         },
       });
-      console.log(
-        "Existing ID applications this month:",
-        existingIdApplications
-      );
-      console.log(
-        "Existing Mail applications this month:",
-        existingMailApplications
-      );
     } catch (countError) {
-      console.error("Error checking application limits:", countError);
       return NextResponse.json(
         { error: "Failed to check application limits" },
         { status: 500 }
@@ -164,9 +147,6 @@ export async function POST(req: NextRequest) {
       (applicationType === "MAIL_CARD_REPLACEMENT" &&
         existingMailApplications > 0)
     ) {
-      console.log(
-        `Student already submitted a ${applicationType} application this month`
-      );
       return NextResponse.json(
         {
           error: `You can only submit one ${applicationType
@@ -177,17 +157,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user has previous applications and auto-fill if applicable
     let hasPreviousApplications;
     try {
-      console.log("Checking previous applications...");
       hasPreviousApplications =
         (await prisma.application.count({
           where: { StudentId: user.StudentId },
         })) > 0;
-      console.log("Has previous applications:", hasPreviousApplications);
     } catch (prevAppsError) {
-      console.error("Error checking previous applications:", prevAppsError);
       return NextResponse.json(
         { error: "Failed to check previous applications" },
         { status: 500 }
@@ -195,18 +171,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (hasPreviousApplications) {
-      // If user has previous applications, enforce consistency with user data
       if (user.Collage && user.Department && user.Program) {
         Collage = user.Collage;
         Department = user.Department;
         Program = user.Program;
-        console.log("Auto-filled from user data:", {
-          Collage,
-          Department,
-          Program,
-        });
       } else {
-        // Fetch from the first application if user data isn’t updated yet
         const firstApplication = await prisma.application.findFirst({
           where: { StudentId: user.StudentId },
           select: { Collage: true, Department: true, Program: true },
@@ -215,28 +184,36 @@ export async function POST(req: NextRequest) {
           Collage = firstApplication.Collage;
           Department = firstApplication.Department;
           Program = firstApplication.Program;
-          console.log("Auto-filled from previous application:", {
-            Collage,
-            Department,
-            Program,
-          });
         }
       }
     }
 
-    // Validate required fields after potential auto-fill
     if (!Collage || !Department || !Program) {
-      console.log("Missing required fields after auto-fill attempt");
       return NextResponse.json(
         { error: "Collage, Department, and Program are required" },
         { status: 400 }
       );
     }
 
-    let application;
-    try {
-      console.log("Creating application...");
-      application = await prisma.application.create({
+    // Generate a token for the application
+    const verificationToken = randomBytes(16).toString("hex");
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Create PendingApplication and Application in a transaction
+    const [pendingApplication, application] = await prisma.$transaction([
+      prisma.pendingApplication.create({
+        data: {
+          StudentId: user.StudentId,
+          applicationType: applicationType as ApplicationType,
+          reason: Reason,
+          Collage,
+          Department,
+          Program,
+          verificationToken,
+          expiresAt,
+        },
+      }),
+      prisma.application.create({
         data: {
           StudentId: user.StudentId,
           applicationType: applicationType as ApplicationType,
@@ -246,28 +223,87 @@ export async function POST(req: NextRequest) {
           Department,
           Program,
         },
-      });
-      console.log("Application created with ID:", application.id);
-    } catch (createError: any) {
-      console.error("Error creating application:", {
-        message: createError.message,
-        stack: createError.stack,
-        code: createError.code,
-        meta: createError.meta,
-      });
-      return NextResponse.json(
-        {
-          error: "Failed to create application",
-          details: createError.message || "Unknown error",
+      }),
+      prisma.monthlyHistory.upsert({
+        where: {
+          day_month_year: {
+            day: currentDay,
+            month: currentMonth,
+            year: currentYear,
+          },
         },
+        update: {
+          Total: { increment: 1 },
+          Pending: { increment: 1 },
+        },
+        create: {
+          year: currentYear,
+          month: currentMonth,
+          day: currentDay,
+          Total: 1,
+          Pending: 1,
+          Accepted: 0,
+          Rejected: 0,
+          createdAt: now,
+        },
+      }),
+      prisma.yearlyHistory.upsert({
+        where: {
+          month_year: {
+            year: currentYear,
+            month: currentMonth,
+          },
+        },
+        update: {
+          Total: { increment: 1 },
+          Pending: { increment: 1 },
+        },
+        create: {
+          year: currentYear,
+          month: currentMonth,
+          Total: 1,
+          Pending: 1,
+          Accepted: 0,
+          Rejected: 0,
+          createdAt: now,
+        },
+      }),
+    ]);
+
+    console.log("Application created with ID:", application.id);
+
+    // Send verification email
+    const verificationLink = `${process.env.NEXT_PUBLIC_URL}/applications/Verify-application?token=${verificationToken}`;
+    const emailResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_URL}/api/mail`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: validStudent.Email,
+          FirstName: validStudent.FirstName,
+          verificationLink,
+        }),
+      }
+    );
+
+    if (!emailResponse.ok) {
+      const errorText = await emailResponse.text();
+      console.error("Failed to send email:", errorText);
+      return NextResponse.json(
+        { error: "Failed to send verification email", details: errorText },
         { status: 500 }
       );
     }
 
-    // Update user with Collage, Department, Program on first submission
+    // ... (rest of the code remains unchanged)
+
+    // Update user with Collage, Department, and Program if first application
     if (!hasPreviousApplications) {
       try {
-        console.log("Updating user with Collage, Department, Program...");
+        console.log(
+          "First application detected. Updating user with Collage, Department, Program..."
+        );
         await prisma.user.update({
           where: { Id: userId },
           data: {
@@ -276,9 +312,13 @@ export async function POST(req: NextRequest) {
             Program,
           },
         });
-        console.log("User updated successfully");
+        console.log("User updated successfully with:", {
+          Collage,
+          Department,
+          Program,
+        });
       } catch (updateError) {
-        console.error("Error updating user:", updateError);
+        console.error("Failed to update user:", updateError);
         return NextResponse.json(
           { error: "Failed to update user data" },
           { status: 500 }
@@ -286,27 +326,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    let notification;
+    // Create notification
     try {
       console.log("Creating notification...");
-      notification = await prisma.notification.create({
+      await prisma.notification.create({
         data: {
           StudentId: user.StudentId,
           message: `Your ${applicationType
             .replace("_", " ")
-            .toLowerCase()} application has been submitted successfully.`,
+            .toLowerCase()} application has been submitted successfully. Please check your email to verify.`,
           link: `/applicationsDetail/${application.id}/Detail`,
           read: false,
         },
       });
-      console.log("Notification created with ID:", notification.id);
+      console.log("Notification created");
     } catch (notifyError: any) {
-      console.error("Error creating notification:", {
-        message: notifyError.message,
-        stack: notifyError.stack,
-        code: notifyError.code,
-        meta: notifyError.meta,
-      });
       return NextResponse.json(
         {
           error: "Failed to create notification",
@@ -316,9 +350,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Return 202 to indicate verification is pending
     return NextResponse.json(
-      { message: "Application submitted successfully", id: application.id },
-      { status: 201 }
+      {
+        message: "Application submitted, verification email sent",
+        id: application.id,
+      },
+      { status: 202 }
     );
   } catch (error: any) {
     console.error("Unexpected error in API route:", {

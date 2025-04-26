@@ -1,6 +1,5 @@
 "use client";
-import { UserSetting } from "@prisma/client";
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import HistoryperiodSelector from "./HistoryperiodSelector";
@@ -21,19 +20,35 @@ import SkeletonWrapper from "@/components/collection/SkeletonWrapper";
 
 const History = () => {
   const [timeframe, setTimeframe] = useState<Timeframe>("month");
-  const [period, setPeroid] = useState<Period>({
-    month: new Date().getMonth(),
+  const [period, setPeriod] = useState<Period>({
+    month: new Date().getMonth(), // 0-based (e.g., April = 3)
     year: new Date().getFullYear(),
   });
+
   const historyDataQuery = useQuery({
     queryKey: ["overview", "history", timeframe, period],
-    queryFn: () =>
-      fetch(
-        `api/applications/History-Data?timeframe=${timeframe}&year=${period.year}&month=${period.month}`
-      ).then((res) => res.json()),
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/applications/History-Data?timeframe=${timeframe}&year=${period.year}&month=${period.month}`
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to fetch history data: ${response.statusText}`);
+      }
+      const data = await response.json();
+      console.log("History data:", data); // Debug: Log the API response
+      return data;
+    },
   });
+
   const dataAvailable =
     Array.isArray(historyDataQuery.data) && historyDataQuery.data.length > 0;
+  const hasNonZeroData =
+    dataAvailable &&
+    historyDataQuery.data.some(
+      (item: { Accepted: number; Rejected: number }) =>
+        item.Accepted > 0 || item.Rejected > 0
+    );
+
   return (
     <div className="container ml-2">
       <h2 className="mt-12 text-3xl font-bold ml-2">History</h2>
@@ -42,20 +57,20 @@ const History = () => {
           <CardTitle className="grid grid-flow-row justify-between gap-2 md:grid-flow-col">
             <HistoryperiodSelector
               period={period}
-              setPeriod={setPeroid}
+              setPeriod={setPeriod}
               timeframe={timeframe}
               setTimeframe={setTimeframe}
             />
             <div className="flex h-10 gap-2">
               <Badge
-                variant={"outline"}
+                variant="outline"
                 className="flex items-center gap-2 text-sm"
               >
                 <div className="h-4 w-4 rounded-full bg-emerald-500"></div>
                 Accepted
               </Badge>
               <Badge
-                variant={"outline"}
+                variant="outline"
                 className="flex items-center gap-2 text-sm"
               >
                 <div className="h-4 w-4 rounded-full bg-red-500"></div>
@@ -66,8 +81,15 @@ const History = () => {
         </CardHeader>
         <CardContent>
           <SkeletonWrapper isLoading={historyDataQuery.isFetching}>
-            {dataAvailable && (
-              <ResponsiveContainer width={"100%"} height={300}>
+            {historyDataQuery.isError ? (
+              <Card className="flex h-[300px] flex-col items-center justify-center bg-background p-2">
+                Error loading data
+                <p className="text-sm text-muted-foreground">
+                  {historyDataQuery.error?.message || "An error occurred"}
+                </p>
+              </Card>
+            ) : dataAvailable ? (
+              <ResponsiveContainer width="100%" height={300}>
                 <BarChart
                   height={300}
                   data={historyDataQuery.data}
@@ -75,33 +97,17 @@ const History = () => {
                 >
                   <defs>
                     <linearGradient id="incomeBar" x1="0" y1="0" x2="0" y2="1">
-                      <stop
-                        offset={"0"}
-                        stopColor="#10b981"
-                        stopOpacity={"1"}
-                      />
-                      <stop
-                        offset={"1"}
-                        stopColor="#10b981"
-                        stopOpacity={"0"}
-                      />
+                      <stop offset="0" stopColor="#10b981" stopOpacity="1" />
+                      <stop offset="1" stopColor="#10b981" stopOpacity="0" />
                     </linearGradient>
                     <linearGradient id="expenseBar" x1="0" y1="0" x2="0" y2="1">
-                      <stop
-                        offset={"0"}
-                        stopColor="#ef4444"
-                        stopOpacity={"1"}
-                      />
-                      <stop
-                        offset={"1"}
-                        stopColor="#ef4444"
-                        stopOpacity={"0"}
-                      />
+                      <stop offset="0" stopColor="#ef4444" stopOpacity="1" />
+                      <stop offset="1" stopColor="#ef4444" stopOpacity="0" />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
                     strokeDasharray="5 5"
-                    strokeOpacity={"0.2"}
+                    strokeOpacity="0.2"
                     vertical={false}
                   />
                   <XAxis
@@ -118,9 +124,7 @@ const History = () => {
                           month: "long",
                         });
                       }
-                      return date.toLocaleString("default", {
-                        day: "2-digit",
-                      });
+                      return date.toLocaleString("default", { day: "2-digit" });
                     }}
                   />
                   <YAxis
@@ -128,35 +132,34 @@ const History = () => {
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
+                    allowDecimals={false}
                   />
                   <Bar
-                    dataKey={"income"}
-                    label="Income"
+                    dataKey="Accepted"
+                    label="Accepted"
                     fill="url(#incomeBar)"
                     radius={4}
                     className="cursor-pointer"
                   />
                   <Bar
-                    dataKey={"expense"}
-                    label="Expense"
+                    dataKey="Rejected"
+                    label="Rejected"
                     fill="url(#expenseBar)"
                     radius={4}
                     className="cursor-pointer"
                   />
                   <Tooltip
                     cursor={{ opacity: 0.1 }}
-                    content={(props) => (
-                      <CustomTooltip  {...props} />
-                    )}
+                    content={(props) => <CustomTooltip {...props} />}
                   />
                 </BarChart>
               </ResponsiveContainer>
-            )}
-            {!dataAvailable && (
+            ) : (
               <Card className="flex h-[300px] flex-col items-center justify-center bg-background p-2">
                 No data for the selected period
                 <p className="text-sm text-muted-foreground">
-                  Try selecting a different period or thire is no Application in the selected period of time
+                  Try selecting a different period or there are no applications
+                  in the selected time period
                 </p>
               </Card>
             )}
@@ -168,47 +171,45 @@ const History = () => {
 };
 
 export default History;
-//? The active and payload props are built-in props that are provided by the Recharts library.
-// When you use the Tooltip component in Recharts, it automatically passes these props to the custom tooltip component.
-//When the CustomTooltip function is called, it receives the payload prop, which is an array of objects. The function then accesses the first object in the array using payload[0], and then accesses the payload property of that object using payload[0].payload.
-//? The payload property of the object is an object that contains the actual data for the tooltip.
-//  In this case, the data is an object with two properties: expense and income.
-function CustomTooltip({ active, payload,  }: any) {
+
+function CustomTooltip({ active, payload }: any) {
   if (!active || !payload || payload.length === 0) return null;
   const data = payload[0].payload;
-  const { Accepted, rejected } = data;
+  const { Accepted, Rejected } = data;
   return (
     <div className="min-w-[300px] rounded border bg-background p-4">
       <TooltipArrow
         label="Accepted"
         value={Accepted}
-        bgColor="bg-red-500"
-        textColor="text-red-500"
-      />
-      <TooltipArrow
-        label="rejected"
-        value={rejected}
         bgColor="bg-emerald-500"
         textColor="text-emerald-500"
       />
       <TooltipArrow
+        label="Rejected"
+        value={Rejected}
+        bgColor="bg-red-500"
+        textColor="text-red-500"
+      />
+      <TooltipArrow
         label="Total"
-        value={rejected + Accepted}
+        value={Rejected + Accepted}
         bgColor="bg-gray-100"
         textColor="text-foreground"
       />
     </div>
   );
 }
+
 interface ToolTipProps {
   label: string;
   value: number;
   bgColor: string;
   textColor: string;
 }
-function TooltipArrow({ label, value, bgColor, textColor }:ToolTipProps ) {
+
+function TooltipArrow({ label, value, bgColor, textColor }: ToolTipProps) {
   return (
-    <div className="flex itmes-center gap-2">
+    <div className="flex items-center gap-2">
       <div className={cn("h-4 w-4 rounded-full", bgColor)} />
       <div className="flex w-full justify-between">
         <p className="text-sm text-muted-foreground">{label}</p>

@@ -1,5 +1,6 @@
+// HistoryperiodSelector.tsx
+"use client";
 import { Period, Timeframe } from "@/app/lib/contants/HistoryType";
-import SkeletonWrapper from "@/components/collection/SkeletonWrapper";
 import {
   Select,
   SelectContent,
@@ -7,114 +8,82 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useQuery } from "@tanstack/react-query";
-import React from "react";
-import { GetHistoryDateResponseType } from "@/app/api/applications/History-Data/route";
-interface Props {
+import { useState } from "react";
+
+interface HistoryperiodSelectorProps {
   period: Period;
   setPeriod: (period: Period) => void;
   timeframe: Timeframe;
   setTimeframe: (timeframe: Timeframe) => void;
 }
-function HistoryperiodSelector({
+
+const HistoryperiodSelector = ({
   period,
   setPeriod,
   timeframe,
   setTimeframe,
-}: Props) {
-  const historyperiods = useQuery<GetHistoryDateResponseType>({
-    queryKey: ["overview", "history", "period"],
-    queryFn: () =>
-      fetch(`/api/applications/History-Period`).then((res) => res.json()),
-  });
+}: HistoryperiodSelectorProps) => {
+  const years = Array.from(
+    { length: 10 },
+    (_, i) => new Date().getFullYear() - i
+  );
+  const months = Array.from({ length: 12 }, (_, i) => ({
+    value: i,
+    label: new Date(0, i).toLocaleString("default", { month: "long" }),
+  }));
+
   return (
-    <div className="flex flex-row items-center gap-4">
-      <SkeletonWrapper isLoading={historyperiods.isFetching} fullWidth={false}>
-        <Tabs
-          value={timeframe}
-          onValueChange={(value) => setTimeframe(value as Timeframe)}
+    <div className="flex gap-2">
+      <Select
+        value={timeframe}
+        onValueChange={(value: Timeframe) => setTimeframe(value)}
+      >
+        <SelectTrigger className="w-[120px]">
+          <SelectValue placeholder="Timeframe" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="month">Month</SelectItem>
+          <SelectItem value="year">Year</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select
+        value={period.year.toString()}
+        onValueChange={(value) =>
+          setPeriod({ ...period, year: parseInt(value) })
+        }
+      >
+        <SelectTrigger className="w-[100px]">
+          <SelectValue placeholder="Year" />
+        </SelectTrigger>
+        <SelectContent>
+          {years.map((year) => (
+            <SelectItem key={year} value={year.toString()}>
+              {year}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {timeframe === "month" && (
+        <Select
+          value={period.month.toString()}
+          onValueChange={(value) =>
+            setPeriod({ ...period, month: parseInt(value) })
+          }
         >
-          <TabsList>
-            <TabsTrigger value="year">Year</TabsTrigger>
-            <TabsTrigger value="month">Month</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </SkeletonWrapper>
-      <div className="flex flex-row items-center gap-2">
-        <SkeletonWrapper isLoading={historyperiods.isFetching}>
-          {/* <h1>we are waiting the year Selector</h1> */}
-          <YearSelector
-            period={period}
-            setPeriod={setPeriod}
-            years={historyperiods.data || []}
-          />
-        </SkeletonWrapper>
-        {timeframe === "month" && (
-          <SkeletonWrapper
-            isLoading={historyperiods.isFetching}
-            fullWidth={false}
-          >
-            <MonthSelector period={period} setPeriod={setPeriod} years={[]} />
-          </SkeletonWrapper>
-        )}
-      </div>
+          <SelectTrigger className="w-[120px]">
+            <SelectValue placeholder="Month" />
+          </SelectTrigger>
+          <SelectContent>
+            {months.map((month) => (
+              <SelectItem key={month.value} value={month.value.toString()}>
+                {month.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
     </div>
   );
-}
-export default HistoryperiodSelector;
-interface YearPeriodSelector {
-  period: Period;
-  setPeriod: (period: Period) => void;
-  years: GetHistoryDateResponseType;
-}
-function YearSelector({ period, years, setPeriod }: YearPeriodSelector) {
-  return (
-    <Select
-      value={period.year.toString()}
-      onValueChange={(value) => {
-        setPeriod({ month: period.month, year: parseInt(value) });
-      }}
-    >
-      <SelectTrigger className="w-[180px]">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {years.map((year:any) => (
-          // const year = yearData.year; // Assuming yearData has a 'year' property
-          <SelectItem key={year} value={year.toString()}>
-            {year.toString()}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
+};
 
-function MonthSelector({ period, setPeriod }: YearPeriodSelector) {
-  return (
-    <Select
-      value={period.month.toString()}
-      onValueChange={(value) => {
-        setPeriod({ year: period.year, month: parseInt(value) });
-      }}
-    >
-      <SelectTrigger className="w-[180px]">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((month) => {
-          const monthStr = new Date(period.year, month, 1).toLocaleString(
-            "default",
-            { month: "long" }
-          );
-          return (
-            <SelectItem key={month} value={month.toString()}>
-              {monthStr}
-            </SelectItem>
-          );
-        })}
-      </SelectContent>
-    </Select>
-  );
-}
+export default HistoryperiodSelector;

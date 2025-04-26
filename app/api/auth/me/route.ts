@@ -7,21 +7,10 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "A5xj97s5GiJHD0518ZI02XjZPQU328";
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization");
-  console.log("Authorization Header in /api/auth/me:", authHeader);
+  const token = req.cookies.get("token")?.value;
 
-  if (!authHeader || !authHeader.startsWith("Bearer")) {
-    console.log("No valid Authorization header found in /api/auth/me");
-    return NextResponse.json({ error: "Unauthorized: Missing or invalid Authorization header" }, { status: 401 } );
-  }
-  const token = authHeader.split(" ")[1];
-  console.log("Token extracted in /api/auth/me:", token);
   if (!token) {
-    console.log("No token found in Authorization header in /api/auth/me");
-    return NextResponse.json(
-      { error: "Unauthorized: No token provided" },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
     const secret = new TextEncoder().encode(JWT_SECRET);

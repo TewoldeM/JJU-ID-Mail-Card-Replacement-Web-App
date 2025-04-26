@@ -9,9 +9,7 @@ interface ApplicationDetailfortheadminProps {
   params: { id: string };
 }
 
-const ApplicationDetailfortheadmin = async ({
-  params,
-}: ApplicationDetailfortheadminProps) => {
+const ApplicationDetailfortheadmin = async ({ params,}: ApplicationDetailfortheadminProps) => {
   const id = params.id; // This is fine; params is not a Promise
   const application = await prisma.application.findUnique({
     where: { id },
@@ -21,7 +19,7 @@ const ApplicationDetailfortheadmin = async ({
   });
 
   if (!application) {
-    return <div>Application not found</div>;
+    return <div className="h-screen text-2xl text-red-400">Application not found</div>;
   }
 
   // Prepare data for the table

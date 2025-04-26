@@ -15,7 +15,7 @@ const studentItems = [
   { label: "Card Replacement", link: "/applications/IdandMailCardReplacement" },
   { label: "Dashboard", link: "/StudentDashboard" },
   { label: "About", link: "/About" },
-  { label: "Contact", link: "/contact" },
+  { label: "Contact", link: "/Contact" },
 ];
 
 // Navigation items for admins

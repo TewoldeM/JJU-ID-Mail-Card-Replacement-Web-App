@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from '../../../../lib/utils';
+import Link from "next/link";
 
 // Define the ValidStudent type based on your Prisma schema
 interface ValidStudent {
@@ -10,6 +11,7 @@ interface ValidStudent {
   FirstName: string;
   LastName: string;
   StudentId: string;
+  Year: string;
   PhoneNumber: string | null;
   Email: string | null;
   CreatedAt: Date;
@@ -25,10 +27,13 @@ export default function StudentsList() {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await fetch("/api/auth/admin/students", {
-          method: "GET",
-          credentials: "include",
-        });
+        const response = await fetch(
+          "/api/auth/admin/SampleDB/SampleDB-Students",
+          {
+            method: "GET",
+            credentials: "include",
+          }
+        );
 
         if (!response.ok) {
           if (response.status === 401) {
@@ -110,6 +115,9 @@ export default function StudentsList() {
                   Email
                 </th>
                 <th className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-left text-gray-700 dark:text-gray-300">
+                  Year
+                </th>
+                <th className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-left text-gray-700 dark:text-gray-300">
                   Created At
                 </th>
               </tr>
@@ -136,6 +144,9 @@ export default function StudentsList() {
                     {student.Email || "N/A"}
                   </td>
                   <td className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
+                    {student.Year || "N/A"}
+                  </td>
+                  <td className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
                     {new Date(student.CreatedAt).toLocaleDateString()}
                   </td>
                 </tr>
@@ -144,15 +155,26 @@ export default function StudentsList() {
           </table>
         </div>
       )}
-      <Button
-        onClick={() => router.push("/admin/add-student")}
-        variant={"outline"}
-        className={cn(
-          "border-gray-500 dark:bg-black bg-gray-200 text-black dark:text-white dark:hover:bg-gray-800 dark:hover:text-white mt-2"
-        )}
-      >
-        Add New Student
-      </Button>
+      <Link href="/Admin/SampleDB/Add-student">
+        <Button className="bg-green-600 text-white hover:bg-green-700">
+          🧪 Add Student(JJU DB)
+        </Button>
+      </Link>
     </div>
   );
 }
+  //  <Link href="/Admin/SampleDB/Add-student">
+  //    <Button className="bg-blue-600 text-white hover:bg-blue-700">
+  //      🧪 Add Sample Student
+  //    </Button>
+  //  </Link>;
+  // 
+  // <Button
+      //   onClick={() => router.push("/admin/add-student")}
+      //   variant={"outline"}
+      //   className={cn(
+      //     "border-gray-500 dark:bg-black bg-gray-200 text-black dark:text-white dark:hover:bg-gray-800 dark:hover:text-white mt-2"
+      //   )}
+      // >
+      //   Add New Student
+      // </Button>

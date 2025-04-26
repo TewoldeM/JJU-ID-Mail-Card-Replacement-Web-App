@@ -5,6 +5,7 @@ import Roouteproviders from "@/components/collection/layouts/RooutProvider";
 import Footer from "@/components/collection/layouts/Footer";
 import ServerNavbar from "./UserProfile/Navbarfetchuser/page";
 import Providers from "@/components/collection/Providers/Providers";
+import { Toaster } from "react-hot-toast";
 
 // Load local fonts
 const geistSans = localFont({
@@ -36,6 +37,41 @@ export default function RootLayout({
         <Providers>
           <ServerNavbar />
           <Roouteproviders>
+            <Toaster
+              position="bottom-right"
+              toastOptions={{
+                duration: 5000,
+                style: {
+                  borderRadius: "8px",
+                  padding: "16px",
+                  fontSize: "16px",
+                },
+                success: {
+                  style: {
+                    background: "#10B981", // Original green background
+                    color: "#BBF7D0", // Light green text
+                    border: "1px solid #059669",
+                  },
+                  iconTheme: {
+                    primary: "#FFFFFF", // White icon for success
+                    secondary: "#10B981",
+                  },
+                },
+                error: {
+                  style: {
+                    background: "#EF4444", // Original red background
+                    color: "#FECACA", // Light red text
+                    border: "1px solid #DC2626",
+                  },
+                  iconTheme: {
+                    primary: "#FCA5A5", // Light red icon (red-300)
+                    secondary: "#EF4444", // Matches the background
+                  },
+                  className: "error-toast",
+                },
+              }}
+            />
+
             {children}
             <Footer />
           </Roouteproviders>
