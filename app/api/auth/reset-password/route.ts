@@ -103,3 +103,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+git commit -m "Manage Student for the admin"
