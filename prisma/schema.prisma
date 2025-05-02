@@ -19,6 +19,7 @@ model User {
   Collage              String?
   Department           String?
   Program              String? // Optional field for program of study
+  ProfilePicture       String? // Base64-encoded profile picture
   Card                 Card?
   ResetToken           String? // For Email verification
   ResetTokenExpires    DateTime? // Expiration time for Email verification token
@@ -28,7 +29,7 @@ model User {
   IsLocked             Boolean        @default(false)
   LockUntil            DateTime?
   IsBlocked            Boolean        @default(false) // Permanent block (admin action)
-  deletedAt            DateTime?      // Soft deletion
+  deletedAt            DateTime? // Soft deletion
   Applications         Application[]  @relation("ApplicationStudent")
   Notifications        Notification[]
   Settings             UserSetting?
@@ -45,23 +46,22 @@ model UserSetting {
   theme                String   @default("light")
   language             String   @default("en")
   notificationsEnabled Boolean  @default(true)
-  profilePicture       File?    @relation(name: "UserSettingProfilePicture")
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }
 
 model File {
-  id            String       @id @default(cuid())
-  fileName      String
-  fileType      String
-  fileSize      Int
-  filePath      String
-  fileCategory  String       @default("OTHER")
-  application   Application? @relation(name: "ApplicationAttachment", fields: [applicationId], references: [id])
-  applicationId String?      @unique
-  userSetting   UserSetting? @relation(name: "UserSettingProfilePicture", fields: [userSettingId], references: [id])
-  userSettingId String?      @unique
-  createdAt     DateTime     @default(now())
+  id                   String       @id @default(cuid())
+  fileName             String
+  fileType             String
+  fileSize             Int
+  fileData             String // Base64-encoded file data
+  fileCategory         FileCategory @default(PHOTOGRAPH)
+  application          Application? @relation(name: "ApplicationAttachment", fields: [applicationId], references: [id])
+  applicationId        String?      @unique
+  pendingApplication   PendingApplication? @relation(name: "PendingApplicationAttachment", fields: [pendingApplicationId], references: [id])
+  pendingApplicationId String?      @unique
+  createdAt            DateTime     @default(now())
 }
 
 model Role {
@@ -92,11 +92,6 @@ model Card {
   status     Status   @default(ACTIVE)
 }
 
-enum CardType {
-  ID_CARD
-  MAIL_CARD
-}
-
 model Application {
   id              String          @id @default(cuid())
   StudentId       String // Reference the 4-digit StudentId from User
@@ -111,7 +106,7 @@ model Application {
   Collage         String
   Department      String
   Program         String
-  user            User            @relation(name: "ApplicationStudent", fields: [StudentId], references: [StudentId]) // Changed to reference User.StudentId
+  user            User            @relation(name: "ApplicationStudent", fields: [StudentId], references: [StudentId])
   notifications   Notification[]  @relation("ApplicationNotifications")
   files           File[]          @relation(name: "ApplicationAttachment")
 
@@ -120,40 +115,21 @@ model Application {
   @@index([applicationType])
   @@index([StudentId])
 }
+
 model PendingApplication {
-  id               String   @id @default(cuid())
-  StudentId        String
-  applicationType  ApplicationType
-  reason           String
-  Collage          String
-  Department       String
-  Program          String
-  verificationToken String   @unique
-  expiresAt        DateTime
-  createdAt        DateTime @default(now())
-}
-enum Decision {
-  APPROVED
-  REJECTED
-}
+  id                String          @id @default(cuid())
+  StudentId         String
+  applicationType   ApplicationType
+  reason            String
+  Collage           String
+  Department        String
+  Program           String
+  verificationToken String          @unique
+  expiresAt         DateTime
+  createdAt         DateTime        @default(now())
+  files             File[]          @relation(name: "PendingApplicationAttachment")
 
-enum Status {
-  PENDING
-  ACCEPTED
-  REJECTED
-  ACTIVE
-}
-
-enum FileCategory {
-  PROFILE_PICTURE
-  ID_PROOF
-  PHOTOGRAPH
-  OTHER
-}
-
-enum ApplicationType {
-  ID_CARD_REPLACEMENT
-  MAIL_CARD_REPLACEMENT
+  @@index([StudentId])
 }
 
 model Notification {
@@ -201,10 +177,39 @@ model ValidStudent {
   LastName    String
   StudentId   String   @unique // Unique identifier for the student (e.g., JJU student ID)
   PhoneNumber String // Optional phone number (matches User.phoneNumber format)
-  Year        String        
-  Email       String  @unique // Optional Email, can be used for validation
+  Year        String
+  Email       String   @unique // Optional Email, can be used for validation
   CreatedAt   DateTime @default(now())
   UpdatedAt   DateTime @updatedAt
 
-  @@index([StudentId, Email]) // Indexes for faster lookups
+  @@index([StudentId, Email])
+}
+
+enum CardType {
+  ID_CARD
+  MAIL_CARD
+}
+
+enum Decision {
+  APPROVED
+  REJECTED
+}
+
+enum Status {
+  PENDING
+  ACCEPTED
+  REJECTED
+  ACTIVE
+}
+
+enum FileCategory {
+  PROFILE_PICTURE
+  ID_PROOF
+  PHOTOGRAPH
+  OTHER
+}
+
+enum ApplicationType {
+  ID_CARD_REPLACEMENT
+  MAIL_CARD_REPLACEMENT
 }

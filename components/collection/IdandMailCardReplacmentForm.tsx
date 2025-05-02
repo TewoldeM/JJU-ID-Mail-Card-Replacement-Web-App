@@ -25,9 +25,7 @@ import {
   Reasons,
 } from "@/app/lib/contants/constants-IdCrad-R";
 import { cn } from "@/lib/utils";
-import { FileUpload } from "../ui/file-upload";
-import { Card } from "../ui/card";
-import { ApplicationType } from "@prisma/client";
+import { Card } from "@/components/ui/card";
 
 interface Role {
   name: string;
@@ -56,7 +54,6 @@ interface User {
   PasswordResetExpires: Date | null;
 }
 
-// Extend the schema to include monthlyApplicationCounts
 const formSchema = z.object({
   FirstName: z
     .string()
@@ -94,18 +91,20 @@ const formSchema = z.object({
       MAIL_CARD_REPLACEMENT: z.number().optional(),
     })
     .optional(),
+  file: z.instanceof(File).optional(),
 });
 
 const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
   const router = useRouter();
-  const { token, loading } = useAuth();
+  const { loading, isAuthenticated } = useAuth();
   const [hasPreviousApplications, setHasPreviousApplications] = useState(false);
   const [previousData, setPreviousData] = useState<{
     Collage: string;
     Department: string;
     Program: string;
   } | null>(null);
-  const [isVerifying, setIsVerifying] = useState(false); // Added for verification state
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -125,16 +124,16 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
         ID_CARD_REPLACEMENT: 0,
         MAIL_CARD_REPLACEMENT: 0,
       },
+      file: undefined,
     },
   });
 
-  // Fetch previous application data including monthly counts
   useEffect(() => {
     const fetchPreviousApplicationData = async () => {
-      if (!token || !user) return;
+      if (!isAuthenticated || !user) return;
       try {
         const response = await axios.get("/api/applications/check-previous", {
-          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
         });
         const {
           hasPrevious,
@@ -169,20 +168,28 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
     };
 
     fetchPreviousApplicationData();
-  }, [token, user, form]);
+  }, [isAuthenticated, user, form]);
+
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+      reader.readAsDataURL(file);
+    });
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (loading) {
       toast.error("Please wait, authentication is still loading.");
       return;
     }
-    if (!token) {
+    if (!isAuthenticated) {
       toast.error("Please sign in to submit the application.");
       router.push("/sign-in");
       return;
     }
 
-    // Check if the user has already submitted this application type this month
     const monthlyCounts = form.getValues("monthlyApplicationCounts") || {
       ID_CARD_REPLACEMENT: 0,
       MAIL_CARD_REPLACEMENT: 0,
@@ -192,7 +199,7 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
       (monthlyCounts.ID_CARD_REPLACEMENT ?? 0) > 0
     ) {
       toast.error(
-        "You have already submitted an ID Card replacement application this month. Only one per month is allowed."
+        "You have already submitted an ID Card replacement application this month."
       );
       return;
     }
@@ -201,13 +208,29 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
       (monthlyCounts.MAIL_CARD_REPLACEMENT ?? 0) > 0
     ) {
       toast.error(
-        "You have already submitted a MailCard replacement application this month. Only one per month is allowed."
+        "You have already submitted a MailCard replacement application this month."
       );
       return;
     }
 
+    if (!values.file) {
+      toast.error("Please upload a file to submit with your application.");
+      return;
+    }
+
     try {
-      const headers = { Authorization: `Bearer ${token}` };
+      setIsUploading(true);
+
+      // Convert file to Base64
+      const base64Data = await convertFileToBase64(values.file);
+      const fileData = {
+        fileName: values.file.name,
+        fileType: values.file.type,
+        fileSize: values.file.size,
+        fileData: base64Data,
+      };
+
+      // Submit application with file data
       const response = await axios.post(
         "/api/applications/CardReplacment",
         {
@@ -216,46 +239,34 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
           Collage: values.Collage,
           Department: values.Department,
           Program: values.Program,
+          file: fileData,
         },
-        { headers }
+        { withCredentials: true }
       );
 
-      // Handle verification response
       if (response.status === 202) {
-        setIsVerifying(true); // Show verification message
+        setIsVerifying(true);
+        form.setValue("file", undefined); // Clear file input
         toast.success("Please check your email to verify your application.");
       } else {
         const applicationId = response.data?.id;
         if (!applicationId) {
           throw new Error("Invalid response from server. Missing 'id' field.");
         }
+        form.setValue("file", undefined); // Clear file input
         router.push(`/applicationsDetail/${applicationId}/Detail`);
         toast.success(
           `Your ${values.applicationType === "ID_CARD_REPLACEMENT" ? "ID card" : "MailCard"} replacement application was successfully submitted`
         );
       }
     } catch (err: any) {
-      if (err.response?.status === 401) {
-        toast.error("Unauthorized. Please sign in again.");
-      } else if (err.response?.status === 404) {
-        toast.error("User not found. Please contact support.");
-      } else if (err.response?.status === 400) {
-        if (err.response.data.error.includes("Reason and application type")) {
-          toast.error("Reason and application type are required.");
-        } else if (
-          err.response.data.error.includes("Collage, Department, and Program")
-        ) {
-          toast.error("Collage, Department, and Program are required.");
-        } else {
-          toast.error("Invalid request. Please check your input.");
-        }
-      } else if (err.response?.status === 403) {
-        toast.error(
-          err.response.data.error || "Cannot submit application at this time."
-        );
-      } else {
-        toast.error("Failed to submit application. Please try again.");
-      }
+      console.error("Submission error:", err);
+      toast.error(
+        "Failed to submit application: " +
+          (err.message || err.response?.data?.error || "Unknown error")
+      );
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -279,7 +290,6 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
             onSubmit={form.handleSubmit(onSubmit, onSubmitError)}
             className="space-y-10 mt-2 md:mt-10"
           >
-            {/* Add verification message conditionally */}
             {isVerifying ? (
               <div className="text-center">
                 <p className="text-lg">
@@ -293,7 +303,6 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
               </div>
             ) : (
               <div className="flex flex-col md:flex-col lg:flex-row gap-12 px-4 md:px-20">
-                {/* Left column: Personal Info */}
                 <div className="flex gap-4 flex-col">
                   <FormField
                     control={form.control}
@@ -411,13 +420,13 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                       className={cn(
                         "px-10 py-6 text-xl border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-900 dark:hover:bg-emerald-700 hover:text-white"
                       )}
+                      disabled={isUploading}
                     >
-                      Submit
+                      {isUploading ? "Submitting..." : "Submit"}
                     </Button>
                   </div>
                 </div>
 
-                {/* Middle column: Dropdowns */}
                 <div className="flex gap-5 flex-col">
                   <FormField
                     control={form.control}
@@ -428,6 +437,8 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                         <FormControl>
                           <select
                             {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value)}
                             className="dark:text-gray-100 border border-gray-500 rounded-none px-2 py-1 w-full"
                           >
                             <option value="" className="text-sm">
@@ -457,6 +468,8 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                         <FormControl>
                           <select
                             {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value)}
                             className="dark:text-gray-100 border border-gray-800 rounded-none px-2 py-1 w-full"
                           >
                             <option value="">Select Card Type</option>
@@ -481,6 +494,8 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                         <FormControl>
                           <select
                             {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value)}
                             className="dark:text-gray-100 border border-gray-700 rounded-none px-2 py-1 w-full"
                           >
                             <option value="">
@@ -506,6 +521,8 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                         <FormControl>
                           <select
                             {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value)}
                             className="dark:text-gray-100 border border-gray-700 rounded-none px-2 py-1 w-full"
                           >
                             <option value="">
@@ -531,6 +548,8 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                         <FormControl>
                           <select
                             {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value)}
                             className="dark:text-gray-100 border border-gray-700 rounded-none px-2 py-1 w-full"
                           >
                             <option value="">
@@ -549,10 +568,33 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                   />
                 </div>
 
-                {/* Right column: File Upload and Submit Button */}
                 <div className="flex flex-col gap-2 overflow-hidden">
                   <Card className="w-96 md:mt-8 h-96">
-                    <FileUpload />
+                    <div className="p-4">
+                      <FormField
+                        control={form.control}
+                        name="file"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Upload File (Image)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    field.onChange(file);
+                                  }
+                                }}
+                                className="dark:text-gray-100 border border-gray-700 rounded-none px-2 py-1 w-full"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </Card>
                 </div>
               </div>

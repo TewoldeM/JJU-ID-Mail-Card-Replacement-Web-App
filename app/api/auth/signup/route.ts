@@ -1,4 +1,3 @@
-// app/api/auth/signup/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { SignJWT } from "jose";
@@ -10,10 +9,17 @@ const REFRESH_TOKEN_SECRET =
   process.env.REFRESH_TOKEN_SECRET || "refresh-token-secret";
 
 export async function POST(req: NextRequest) {
-  const { FirstName, LastName, Password, StudentId, Email, Year, PhoneNumber } =
-    await req.json();
-
   try {
+    const {
+      FirstName,
+      LastName,
+      Password,
+      StudentId,
+      Email,
+      Year,
+      PhoneNumber,
+    } = await req.json();
+
     // Input validation
     if (
       !Password ||
@@ -34,13 +40,12 @@ export async function POST(req: NextRequest) {
     if (!/^\d{4}$/.test(StudentId)) {
       return NextResponse.json(
         { error: "Student ID must be a 4-digit number" },
-        
         { status: 400 }
       );
     }
 
-    // Optional phone number validation
-    if (PhoneNumber && !/^\d{10}$/.test(PhoneNumber)) {
+    // Validate phone number
+    if (!/^\d{10}$/.test(PhoneNumber)) {
       return NextResponse.json(
         { error: "Phone number must be 10 digits" },
         { status: 400 }
@@ -48,24 +53,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Check for existing users
-    const [
-      existingUser,
-      existingEmail,
-      existingPhoneNumber,
-      existingStudentId,
-    ] = await Promise.all([
-      prisma.user.findUnique({ where: { Id: StudentId } }), // Check by UUID (Id)
-      prisma.user.findUnique({ where: { Email } }),
-      PhoneNumber ? prisma.user.findFirst({ where: { PhoneNumber } }) : null,
-      prisma.user.findUnique({ where: { StudentId } }), // Check by 4-digit StudentId
-    ]);
+    const [existingEmail, existingPhoneNumber, existingStudentId] =
+      await Promise.all([
+        prisma.user.findUnique({ where: { Email } }),
+        prisma.user.findFirst({ where: { PhoneNumber } }),
+        prisma.user.findUnique({ where: { StudentId } }),
+      ]);
 
-    if (
-      existingUser ||
-      existingEmail ||
-      existingPhoneNumber ||
-      existingStudentId
-    ) {
+    if (existingEmail || existingPhoneNumber || existingStudentId) {
       return NextResponse.json(
         { error: "Student ID, Email, or phone number already exists" },
         { status: 400 }
@@ -84,9 +79,6 @@ export async function POST(req: NextRequest) {
           description: "Default Role for students",
         },
       });
-      console.warn(
-        "STUDENT Role was missing and has been created dynamically."
-      );
     }
 
     // Hash Password
@@ -98,7 +90,7 @@ export async function POST(req: NextRequest) {
         FirstName,
         LastName,
         Password: hashedPassword,
-        StudentId, // Store the 4-digit StudentId
+        StudentId,
         Year,
         Email,
         PhoneNumber,
@@ -125,23 +117,29 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    if (!newUser.Settings) {
+      throw new Error("Failed to create user settings");
+    }
+
     // Generate tokens
     const tokenPayload = {
       Id: newUser.Id,
       FirstName: newUser.FirstName,
       LastName: newUser.LastName,
-      StudentId: newUser.StudentId, // Use the 4-digit StudentId in token
+      StudentId: newUser.StudentId,
       Email: newUser.Email,
       Year: newUser.Year,
-      PhoneNumber: newUser.PhoneNumber || null,
-      Roles: newUser.Roles.map((Role) => ({
-        name: Role.name,
-        permissions: Role.permissions.map((p) => p.name),
+      PhoneNumber: newUser.PhoneNumber,
+      Roles: newUser.Roles.map((role) => ({
+        id: role.id,
+        name: role.name,
+        permissions: role.permissions.map((p) => p.name),
       })),
       Settings: {
-        theme: newUser.Settings?.theme ?? "light",
-        language: newUser.Settings?.language ?? "en",
-        notificationsEnabled: newUser.Settings?.notificationsEnabled ?? true,
+        id: newUser.Settings.id,
+        theme: newUser.Settings.theme,
+        language: newUser.Settings.language,
+        notificationsEnabled: newUser.Settings.notificationsEnabled,
       },
     };
 
@@ -163,9 +161,12 @@ export async function POST(req: NextRequest) {
         refreshToken,
         user: {
           Id: newUser.Id,
+          FirstName: newUser.FirstName,
+          LastName: newUser.LastName,
+          StudentId: newUser.StudentId,
           Email: newUser.Email,
-          PhoneNumber: newUser.PhoneNumber || null,
-          StudentId: newUser.StudentId, // Include 4-digit StudentId in response
+          Year: newUser.Year,
+          PhoneNumber: newUser.PhoneNumber,
           Roles: tokenPayload.Roles,
           Settings: tokenPayload.Settings,
         },
@@ -190,11 +191,13 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Signup error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: error.message },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }

@@ -1,4 +1,3 @@
-// app/api/auth/signin/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { SignJWT } from "jose";
@@ -89,7 +88,7 @@ export async function POST(req: NextRequest) {
       studentId: user.StudentId,
       Email: user.Email,
       year: user.Year,
-      Roles: user.Roles.map((role) => role.name),
+      Roles: user.Roles.map((role) => role.name), // Ensure Roles is an array of strings
     };
 
     console.log("JWT Token Payload for sign-in:", tokenPayload);
@@ -107,7 +106,7 @@ export async function POST(req: NextRequest) {
     console.log("Generated token:", token);
     console.log("Generated refresh token:", refreshToken);
 
-    // Return tokens in response body, let client handle cookies
+    // Create response
     const response = NextResponse.json(
       {
         message: "Sign-in successful",
@@ -121,6 +120,23 @@ export async function POST(req: NextRequest) {
       },
       { status: 200 }
     );
+
+    // Set tokens as HTTP-only cookies
+    response.cookies.set("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 3600, // 1 hour
+      path: "/",
+    });
+
+    response.cookies.set("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 3600, // 7 days
+      path: "/",
+    });
 
     return response;
   } catch (error) {

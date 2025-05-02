@@ -46,6 +46,7 @@
     "@tiptap/pm": "^2.10.2",
     "@tiptap/react": "^2.10.2",
     "@tiptap/starter-kit": "^2.10.2",
+    "@uploadthing/react": "^7.3.0",
     "argon2": "^0.41.1",
     "axios": "^1.7.7",
     "class-variance-authority": "^0.7.0",
@@ -83,6 +84,7 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "twilio": "^5.3.5",
+    "uploadthing": "^7.6.0",
     "vaul": "^1.1.0",
     "zod": "^3.24.1"
   },

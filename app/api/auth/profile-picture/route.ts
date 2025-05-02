@@ -5,7 +5,7 @@ import { jwtVerify, JWTPayload } from "jose";
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "A5xj97s5GiJHD0518ZI02XjZPQU328";
 
-export async function PUT(req: NextRequest) {
+export async function GET(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -20,23 +20,21 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    const { Email, PhoneNumber, Password } = await req.json();
-    const updateData: any = { Email, PhoneNumber };
-    if (Password) {
-      updateData.Password = await require("argon2").hash(Password);
-    }
-
-    const user = await prisma.user.update({
+    const user = await prisma.user.findUnique({
       where: { Id: userId },
-      data: updateData,
+      select: { ProfilePicture: true },
     });
 
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     return NextResponse.json(
-      { message: "Profile updated successfully", user },
+      { profilePicture: user.ProfilePicture || null },
       { status: 200 }
     );
   } catch (error: any) {
-    console.error("Profile update error:", error);
+    console.error("Profile picture fetch error:", error);
     return NextResponse.json(
       { error: "Internal server error", details: error.message },
       { status: 500 }

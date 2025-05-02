@@ -8,14 +8,14 @@ const JWT_SECRET = process.env.JWT_SECRET || "A5xj97s5GiJHD0518ZI02XjZPQU328";
 export async function PUT( req: NextRequest,{ params }: { params: { notificationId: string } }
 ) {
   const { notificationId } = params;
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer")) {
-    return NextResponse.json({ error: "Unauthorized User" }, { status: 401 });
-  }
-  const token = authHeader.split(" ")[1];
-  //get the token from the header by splitting the string by space and taking the second part.
-  //bcz the first part is "Bearer" and the second part is the token. array index o= barrer and 1= token.
-  try {
+const token = req.cookies.get("token")?.value;
+if (!token) {
+  console.log("No token found in cookie");
+  return NextResponse.json(
+    { error: "Unauthorized: No token found" },
+    { status: 401 }
+  );
+} try {
     const secret = new TextEncoder().encode(JWT_SECRET);
     const { payload } = await jwtVerify(token, secret);
     const userId = (payload as any).Id;

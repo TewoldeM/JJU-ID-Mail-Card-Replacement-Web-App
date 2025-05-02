@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, ApplicationType } from "@prisma/client";
+import { PrismaClient, ApplicationType, FileCategory } from "@prisma/client";
 import { jwtVerify, JWTPayload } from "jose";
 import { randomBytes } from "crypto";
 
@@ -7,23 +7,20 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "A5xj97s5GiJHD0518ZI02XjZPQU328";
 
 export async function POST(req: NextRequest) {
-  console.log("Received POST request to /api/applications");
+  console.log("Received POST request to /api/applications/CardReplacment");
 
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    console.log("No valid Authorization header found");
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const token = authHeader.split(" ")[1];
-  if (!token || token.trim() === "") {
-    console.log("Token is empty or invalid");
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  const token = req.cookies.get("token")?.value;
+  if (!token) {
+    console.log("No token found in cookie");
+    return NextResponse.json(
+      { error: "Unauthorized: No token found" },
+      { status: 401 }
+    );
   }
 
   try {
     const secret = new TextEncoder().encode(JWT_SECRET);
-    let payload;
+    let payload: JWTPayload | undefined;
     try {
       const result = await jwtVerify(token, secret, { clockTolerance: 15 });
       payload = result.payload;
@@ -58,10 +55,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let { Reason, applicationType, Collage, Department, Program } = body;
-    if (!Reason || !applicationType) {
+    let { Reason, applicationType, Collage, Department, Program, file } = body;
+    if (!Reason || !applicationType || !file) {
       return NextResponse.json(
-        { error: "Reason and application type are required" },
+        { error: "Reason, application type, and file are required" },
+        { status: 400 }
+      );
+    }
+
+    if (
+      !file.fileName ||
+      !file.fileType ||
+      !file.fileSize ||
+      !file.fileData ||
+      !file.fileType.startsWith("image/")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Invalid file data: must include name, type, size, and be an image",
+        },
         { status: 400 }
       );
     }
@@ -195,11 +208,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Generate a token for the application
     const verificationToken = randomBytes(16).toString("hex");
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Create PendingApplication and Application in a transaction
+    // First transaction: Create PendingApplication and Application
     const [pendingApplication, application] = await prisma.$transaction([
       prisma.pendingApplication.create({
         data: {
@@ -222,6 +234,21 @@ export async function POST(req: NextRequest) {
           Collage,
           Department,
           Program,
+        },
+      }),
+    ]);
+
+    // Second transaction: Create File and update histories
+    const [fileRecord] = await prisma.$transaction([
+      prisma.file.create({
+        data: {
+          fileName: file.fileName,
+          fileType: file.fileType,
+          fileSize: file.fileSize,
+          fileData: file.fileData,
+          fileCategory: FileCategory.PHOTOGRAPH,
+          applicationId: application.id,
+          pendingApplicationId: pendingApplication.id,
         },
       }),
       prisma.monthlyHistory.upsert({
@@ -270,9 +297,13 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
-    console.log("Application created with ID:", application.id);
+    console.log(
+      "Application created with ID:",
+      application.id,
+      "File ID:",
+      fileRecord.id
+    );
 
-    // Send verification email
     const verificationLink = `${process.env.NEXT_PUBLIC_URL}/applications/Verify-application?token=${verificationToken}`;
     const emailResponse = await fetch(
       `${process.env.NEXT_PUBLIC_URL}/api/mail`,
@@ -296,9 +327,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ... (rest of the code remains unchanged)
-
-    // Update user with Collage, Department, and Program if first application
     if (!hasPreviousApplications) {
       try {
         console.log(
@@ -326,7 +354,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Create notification
     try {
       console.log("Creating notification...");
       await prisma.notification.create({
@@ -350,11 +377,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Return 202 to indicate verification is pending
     return NextResponse.json(
       {
         message: "Application submitted, verification email sent",
         id: application.id,
+        fileId: fileRecord.id,
       },
       { status: 202 }
     );

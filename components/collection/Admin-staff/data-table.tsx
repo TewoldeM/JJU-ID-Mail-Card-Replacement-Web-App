@@ -1,4 +1,3 @@
-// components/collection/Admin-staff/data-table.tsx
 "use client";
 
 import {
@@ -118,4 +117,3 @@ export function DataTable<TData, TValue>({
     </div>
   );
 }
- 

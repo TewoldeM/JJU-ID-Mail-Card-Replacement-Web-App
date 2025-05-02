@@ -1,4 +1,3 @@
-// components/collection/Admin-staff/columns.tsx
 "use client";
 
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +29,7 @@ export type ApplicationData = {
   createdAt: string;
   Year: string; // Add the Year attribute from the user
   applicationDetail: string; // Add a field for the detail link or identifier
+  photo: string | null; // Base64-encoded photo data or null
 };
 
 export const columns: ColumnDef<ApplicationData>[] = [
@@ -75,8 +75,8 @@ export const columns: ColumnDef<ApplicationData>[] = [
             status === "accepted"
               ? "bg-green-600 hover:bg-green-700 text-white"
               : status === "rejected"
-              ? "bg-red-600 hover:bg-red-700 text-white"
-              : "bg-gray-800 hover:bg-gray-900 text-white"
+                ? "bg-red-600 hover:bg-red-700 text-white"
+                : "bg-gray-800 hover:bg-gray-900 text-white"
           }`}
         >
           {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -148,7 +148,7 @@ export const columns: ColumnDef<ApplicationData>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-         ApplicationType
+          Application Type
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -178,12 +178,26 @@ export const columns: ColumnDef<ApplicationData>[] = [
     ),
   },
   {
+    accessorKey: "photo",
+    header: "Photo",
+    cell: ({ row }) => {
+      const photo = row.getValue("photo") as string | null;
+      return photo ? (
+        <img
+          src={photo}
+          alt="Student submitted photo"
+          className="h-12 w-12 object-cover rounded"
+        />
+      ) : (
+        <span>No photo</span>
+      );
+    },
+  },
+  {
     accessorKey: "applicationDetail",
     header: ({ column }) => {
       return (
-        <Button
-          variant="ghost"
-        >
+        <Button variant="ghost">
           Application Detail
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
@@ -207,5 +221,3 @@ export const columns: ColumnDef<ApplicationData>[] = [
     },
   },
 ];
-
-  

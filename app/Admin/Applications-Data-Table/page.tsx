@@ -1,4 +1,3 @@
-// app/admin/admin-applications/page.tsx
 import {
   Card,
   CardContent,
@@ -6,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, FileCategory } from "@prisma/client";
 import { DataTable } from "@/components/collection/Admin-staff/data-table";
 import {
   columns,
@@ -19,6 +18,12 @@ async function getApplications(): Promise<ApplicationData[]> {
   const applications = await prisma.application.findMany({
     include: {
       user: true, // Include user data for each application
+      files: {
+        where: {
+          fileCategory: FileCategory.PHOTOGRAPH, // Only include files categorized as PHOTOGRAPH
+        },
+        take: 1, // Limit to one photo per application
+      },
     },
   });
 
@@ -36,6 +41,7 @@ async function getApplications(): Promise<ApplicationData[]> {
     createdAt: new Date(app.createdAt).toLocaleDateString(),
     Year: app.user.Year || "N/A", // Add the Year attribute from the user
     applicationDetail: app.id, // Use the application ID as a placeholder for the detail link
+    photo: app.files[0]?.fileData || null, // Base64-encoded photo data, or null if no photo
   }));
 }
 
@@ -64,7 +70,7 @@ const AdminApplicationsPage = async () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <DataTable columns={columns} data={data} />5
+            <DataTable columns={columns} data={data} />
           </CardContent>
         </Card>
       </div>

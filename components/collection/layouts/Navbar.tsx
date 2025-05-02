@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePathname, useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import Logo from "./Logo";
 import { ThemeSwicherButton } from "./ThemeSwicherButton";
 import { useAuth } from "@/context/AuthContext";
+import Image from "next/image";
 
 // Navigation items for students
 const studentItems = [
@@ -32,6 +33,27 @@ interface NavbarProps {
 const Navbar = ({ userRole }: NavbarProps) => {
   const { isAuthenticated, loading, logout } = useAuth();
   const router = useRouter();
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+
+  // Fetch profile picture when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchProfilePicture = async () => {
+        try {
+          const response = await fetch("/api/auth/profile-picture", {
+            credentials: "include", // Send cookies
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setProfilePicture(data.profilePicture || null);
+          }
+        } catch (error) {
+          console.error("Fetch profile picture error:", error);
+        }
+      };
+      fetchProfilePicture();
+    }
+  }, [isAuthenticated]);
 
   // Prevent rendering until auth state is resolved
   if (loading) {
@@ -44,11 +66,13 @@ const Navbar = ({ userRole }: NavbarProps) => {
         isAuthenticated={isAuthenticated}
         logout={logout}
         userRole={userRole}
+        profilePicture={profilePicture}
       />
       <MobileNavBar
         isAuthenticated={isAuthenticated}
         logout={logout}
         userRole={userRole}
+        profilePicture={profilePicture}
       />
     </>
   );
@@ -59,14 +83,15 @@ function MobileNavBar({
   isAuthenticated,
   logout,
   userRole,
+  profilePicture,
 }: {
   isAuthenticated: boolean;
   logout: () => void;
   userRole: string | null;
+  profilePicture: string | null;
 }) {
   const [isOpen, setIsOpen] = React.useState(false);
   const router = useRouter();
-
   const items = userRole === "ADMIN" ? adminItems : studentItems;
 
   return (
@@ -123,20 +148,26 @@ function MobileNavBar({
                 <div className="flex flex-col gap-0">
                   {isAuthenticated ? (
                     <div className="flex flex-col gap-0 px-6 -mt-3">
-                      {/* <BellRing className="" size={20} /> */}
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => router.push("/UserProfile")}
-                        className="rounded-full text-gray-300 text-lg"
+                        className="rounded-full text-gray-300 text-lg flex items-center gap-2"
                       >
+                        {profilePicture ? (
+                          <div className="relative w-8 h-8">
+                            <Image
+                              src={profilePicture}
+                              alt="Profile Picture"
+                              fill
+                              className="rounded-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <User className="h-5 w-5" size={25} />
+                        )}
                         Profile
                       </Button>
-                      {/* <User
-                        className="h-5 w-5"
-                        size={25}
-                        onClick={() => router.push("/UserProfile")}
-                      /> */}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -180,10 +211,12 @@ function DesktopNavBar({
   isAuthenticated,
   logout,
   userRole,
+  profilePicture,
 }: {
   isAuthenticated: boolean;
   logout: () => void;
   userRole: string | null;
+  profilePicture: string | null;
 }) {
   const router = useRouter();
   const items = userRole === "ADMIN" ? adminItems : studentItems;
@@ -221,7 +254,18 @@ function DesktopNavBar({
                 onClick={() => router.push("/UserProfile")}
                 className="rounded-md shadow-md border-2 dark:border-gray-700"
               >
-                <User size={25} />
+                {profilePicture ? (
+                  <div className="relative w-8 h-8">
+                    <Image
+                      src={profilePicture}
+                      alt="Profile Picture"
+                      fill
+                      className="rounded-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <User size={25} />
+                )}
               </Button>
               <Button
                 onClick={logout}

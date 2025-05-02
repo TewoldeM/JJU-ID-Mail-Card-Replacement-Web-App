@@ -108,12 +108,12 @@ console.log("application detail",application?.user)
           </tbody>
         </table>
       </Card>
-      <Link href="/Student-Dashboard">
+      <Link href="/StudentDashboard">
         <Button
           variant={"outline"}
           className="mt-2 border-emerald-500 bg-emerald-950 text-white hover:bg-emerald-700 hover:text-white"
         >
-         Go to Dashboard
+          Go to Dashboard
         </Button>
       </Link>
     </div>

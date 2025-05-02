@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface userprops {
   Id: string;
@@ -79,9 +80,11 @@ const StudentDashboard = ({ user }: { user: userprops }) => {
           </p>
 
           <div className="mt-4">
-            <Button className="px-5 py-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
-              View Details
-            </Button>
+            <Link href={`/UserProfile`}>
+              <Button className="px-5 py-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
+                View Details
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -109,19 +112,19 @@ const StudentDashboard = ({ user }: { user: userprops }) => {
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 Submitted on: {formatDate(currentApplication.createdAt)}
               </p>
+              <div className="mt-4">
+                <Link
+                  href={`/applicationsDetail/${currentApplication.id}/Detail`}
+                >
+                  <Button className="px-5 py-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
+                    View Details
+                  </Button>
+                </Link>
+              </div>
             </>
           ) : (
             <p className="text-gray-500">No current application.</p>
           )}
-
-          <div className="mt-4">
-            <Button
-              className="px-5 py-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
-              disabled={!currentApplication}
-            >
-              View Details
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -163,7 +166,7 @@ const StudentDashboard = ({ user }: { user: userprops }) => {
           <h2 className="text-xl font-semibold mb-4">Notifications</h2>
           {user.Notifications.length > 0 ? (
             <ul className="list-disc pl-5 text-sm space-y-2">
-              {user.Notifications.map((notif) => (
+              {user.Notifications.slice(0, 3).map((notif) => (
                 <li
                   key={notif.id}
                   className={notif.read ? "text-gray-500" : "font-medium"}
@@ -177,18 +180,22 @@ const StudentDashboard = ({ user }: { user: userprops }) => {
           )}
 
           <div className="mt-4">
-            <Button className="px-5 py-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
-              View Details
-            </Button>
+            <Link href={`/StudentDashboard/Notfications`}>
+              <Button className="px-5 py-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
+                {user.Notifications.length > 3 ? "See More" : "View Details"}
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
 
       {/* New Application Button */}
-      <div className="text-center">
-        <Button className="px-8 py-6 text-base rounded-lg bg-green-700 text-white font-semibold hover:bg-green-700 transition dark:bg-green-700 dark:hover:bg-green-600">
-          Submit New Application
-        </Button>
+      <div className="text-left">
+        <Link href="/application/new">
+          <Button className="px-8 py-6 text-base rounded-lg bg-green-700 text-white font-semibold hover:bg-green-700 transition dark:bg-green-700 dark:hover:bg-green-600">
+            Submit New Application
+          </Button>
+        </Link>
       </div>
     </div>
   );

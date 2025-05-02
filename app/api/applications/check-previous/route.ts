@@ -8,19 +8,14 @@ const JWT_SECRET = process.env.JWT_SECRET || "A5xj97s5GiJHD0518ZI02XjZPQU328";
 export async function GET(req: NextRequest) {
   console.log("Received GET request to /api/applications/check-previous");
 
-  const authHeader = req.headers.get("Authorization");
-  console.log("Authorization Header:", authHeader);
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    console.log("No valid Authorization header found");
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const token = authHeader.split(" ")[1];
-  console.log("Token extracted:", token);
-  if (!token || token.trim() === "") {
-    console.log("Token is empty or invalid");
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
+const token = req.cookies.get("token")?.value;
+if (!token) {
+  console.log("No token found in cookie");
+  return NextResponse.json(
+    { error: "Unauthorized: No token found" },
+    { status: 401 }
+  );
+}
 
   try {
     const secret = new TextEncoder().encode(JWT_SECRET);
