@@ -4,8 +4,13 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePathname, useRouter } from "next/navigation";
 import { BellRing, LogOutIcon, Menu, User } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import Logo from "./Logo";
@@ -108,18 +113,13 @@ function MobileNavBar({
           <div className="flex flex-col gap-0">
             {isAuthenticated ? (
               <>
-                {userRole === "STUDENT" && (
-                  <BellRing className="" size={20} />
-                )}
+                {userRole === "STUDENT" && <BellRing className="" size={20} />}
               </>
             ) : (
               <div className="flex flex-row gap-1">
                 <Link
                   href="/sign-in"
-                  className={cn(
-                    buttonVariants({ variant: "ghost" }),
-                    "text-lg font-medium dark:text-white"
-                  )}
+                  className={cn("text-lg font-medium dark:text-white")}
                 >
                   <Button
                     className={cn(
@@ -140,11 +140,17 @@ function MobileNavBar({
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent className="w-[400px] sm:w-[540px]" side="left">
+            <SheetContent
+              className="w-[400px] sm:w-[540px] flex flex-col items-start"
+              side="left"
+            >
               <VisuallyHidden>
                 <DialogTitle>Navigation Menu</DialogTitle>
               </VisuallyHidden>
-              <div className="flex flex-col gap-2 pt-4">
+              <SheetDescription>
+                {/* Empty description to satisfy accessibility */}
+              </SheetDescription>
+              <div className="flex flex-col gap-4 pt-4 w-full">
                 {items.map((item) => (
                   <NavbarItems
                     key={item.label}
@@ -152,58 +158,37 @@ function MobileNavBar({
                     link={item.link}
                   />
                 ))}
-                <div className="flex flex-col gap-0">
-                  {isAuthenticated ? (
-                    <div className="flex flex-col gap-0 px-6 -mt-3">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => router.push("/UserProfile")}
-                        className="rounded-full text-gray-300 text-lg flex items-center gap-2"
-                      >
-                        {profilePicture ? (
-                          <div className="relative w-8 h-8">
-                            <Image
-                              src={profilePicture}
-                              alt="Profile Picture"
-                              fill
-                              className="rounded-full object-cover"
-                            />
-                          </div>
-                        ) : (
-                          <User className="h-5 w-5" size={25} />
-                        )}
-                        Profile
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={logout}
-                        className="rounded-full text-gray-300 text-lg"
-                      >
-                        Logout
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-row gap-1">
-                      <Link
-                        href="/sign-in"
-                        className={cn(
-                          buttonVariants({ variant: "ghost" }),
-                          "text-lg font-medium dark:text-white"
-                        )}
-                      >
-                        <Button
-                          className={cn(
-                            "dark:bg-green-900 dark:hover:bg-green-900 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline border-2 shadow-md dark:border-green-800 border-green-600 hover:border-2 bg-green-800 hover:bg-green-900"
-                          )}
-                        >
-                          Login
-                        </Button>
-                      </Link>
-                    </div>
-                  )}
-                </div>
+                {isAuthenticated ? (
+                  <div className="flex flex-col gap-4 w-full">
+                    <Link
+                      href="/UserProfile"
+                      className={cn(
+                        "text-lg text-muted-foreground hover:text-foreground rounded-md",
+                        usePathname() === "/UserProfile" &&
+                          "text-foreground font-medium"
+                      )}
+                    >
+                      Profile
+                    </Link>
+                    <button
+                      onClick={logout}
+                      className={cn(
+                        "text-lg text-muted-foreground hover:text-foreground rounded-md text-left"
+                      )}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                ) : (
+                  <Link
+                    href="/sign-in"
+                    className={cn(
+                      "text-lg text-muted-foreground hover:text-foreground rounded-md"
+                    )}
+                  >
+                    Login
+                  </Link>
+                )}
               </div>
             </SheetContent>
           </Sheet>
@@ -318,7 +303,6 @@ function NavbarItems({ label, link }: { label: string; link: string }) {
       <Link
         href={link}
         className={cn(
-          buttonVariants({ variant: "ghost" }),
           "text-lg text-muted-foreground hover:text-foreground rounded-md",
           pathname === link && "text-foreground font-medium"
         )}
@@ -330,4 +314,3 @@ function NavbarItems({ label, link }: { label: string; link: string }) {
 }
 
 export default Navbar;
-

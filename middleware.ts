@@ -83,14 +83,14 @@ export async function middleware(req: NextRequest) {
       req.nextUrl.pathname.startsWith(route.replace(":path*", ""))
     );
 
-    console.log(
-      "Fallback - isAdmin:",
-      isAdmin,
-      "isAdminRoute:",
-      isAdminRoute,
-      "isStudentRoute:",
-      isStudentRoute
-    );
+    // console.log(
+    //   "Fallback - isAdmin:",
+    //   isAdmin,
+    //   "isAdminRoute:",
+    //   isAdminRoute,
+    //   "isStudentRoute:",
+    //   isStudentRoute
+    // );
 
     if (isAdminRoute) {
       if (isAdmin) return NextResponse.next();

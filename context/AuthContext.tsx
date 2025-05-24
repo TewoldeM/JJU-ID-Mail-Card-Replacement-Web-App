@@ -26,7 +26,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const router = useRouter();
 
   const login = (newToken: string, newRefreshToken: string) => {
-    console.log("Logging in with token:", newToken); // Debug
     setToken(newToken);
     setRefreshToken(newRefreshToken);
     setIsAuthenticated(true);
@@ -34,7 +33,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const logout = () => {
-    console.log("Logging out"); // Debug
     setToken(null);
     setRefreshToken(null);
     setIsAuthenticated(false);
@@ -50,7 +48,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       if (response.ok) {
         const data = await response.json();
-        console.log("Refresh token response:", data); // Debug
         login(data.token, data.refreshToken);
         return true;
       } else {
@@ -69,10 +66,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const response = await fetch("/api/auth/me", {
           credentials: "include",
         });
-        console.log("Response status from /api/auth/me:", response.status); // Debug
         if (response.ok) {
           const data = await response.json();
-          console.log("Auth/me response data:", data); // Debug
           setUser(data);
           setToken(data.token);
           setRefreshToken(data.refreshToken);

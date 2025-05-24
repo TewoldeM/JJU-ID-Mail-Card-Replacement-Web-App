@@ -38,8 +38,6 @@ useEffect(() => {
         body: JSON.stringify({ Email: email, Password: password }),
       });
       const data = await response.json();
-      console.log("Sign-in API response:", data); // Debug
-
       if (response.ok) {
         if (!data.token || !data.refreshToken) {
           console.error("Tokens missing in API response:", data);
@@ -47,11 +45,6 @@ useEffect(() => {
           setFormVisible(true); // Show form again on error
           return;
         }
-        console.log(
-          "Calling login with tokens:",
-          data.token,
-          data.refreshToken
-        ); // Debug
         login(data.token, data.refreshToken);
         const userData = data.user;
         const userRoles = userData?.Roles || [];
@@ -72,18 +65,6 @@ useEffect(() => {
       setLoading(false);
     }
   };
-// if (initialLoading) {
-//   return (
-//     <div className="flex justify-center items-center h-screen">
-//       <Loader2 className="h-10 w-10 animate-spin text-green-600" />
-//       <span className="ml-2 text-green-700 dark:text-white text-lg font-semibold">
-//         Loading page...
-//       </span>
-//     </div>
-//   );
-// }
-
-  // Show loading spinner while loading
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">

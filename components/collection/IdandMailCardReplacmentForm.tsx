@@ -27,6 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { FileUpload } from "@/components/ui/file-upload";
+import Link from "next/link";
 
 interface Role {
   name: string;
@@ -309,8 +310,8 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
             className="space-y-10 mt-2 md:mt-10"
           >
             {isVerifying ? (
-              <div className="text-center">
-                <p className="text-lg">
+              <div className="px-6 mb-44">
+                <p className="text-lg font-semibold">
                   A verification email has been sent to your registered email
                   address.
                 </p>
@@ -318,6 +319,14 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                   Please check your inbox (and spam folder) and click the link
                   to complete your application submission.
                 </p>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "bg-green-700 hover:bg-green-800 border-green-600 hover:border-2 text-white hover:text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline border-2 shadow-md"
+                  )}
+                >
+                  <Link href="/StudentDashboard">Dashboard</Link>
+                </Button>
               </div>
             ) : (
               <div className="flex flex-col md:flex-col lg:flex-row gap-12 px-4 md:px-20">
