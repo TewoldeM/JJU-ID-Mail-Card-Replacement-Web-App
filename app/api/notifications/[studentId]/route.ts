@@ -10,8 +10,6 @@ export async function GET(
   const resolvedParams = await params; // Await params
   const { StudentId } = resolvedParams;
 
-  console.log("API called with StudentId:", StudentId);
-
   try {
     const notifications = await prisma.notification.findMany({
       where: { StudentId, read: false },
@@ -19,7 +17,6 @@ export async function GET(
       include: { applications: true },
     });
 
-    console.log("Notifications found:", notifications);
     return NextResponse.json(notifications, { status: 200 });
   } catch (error: any) {
     console.error("Error in GET /api/notifications:", error);

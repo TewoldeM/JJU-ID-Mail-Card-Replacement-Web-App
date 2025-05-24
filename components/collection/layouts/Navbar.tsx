@@ -6,6 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { BellRing, LogOutIcon, Menu, User } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { DialogTitle } from "@radix-ui/react-dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import Logo from "./Logo";
 import { ThemeSwicherButton } from "./ThemeSwicherButton";
 import { useAuth } from "@/context/AuthContext";
@@ -106,7 +108,9 @@ function MobileNavBar({
           <div className="flex flex-col gap-0">
             {isAuthenticated ? (
               <>
-                <BellRing className="" size={20} />
+                {userRole === "STUDENT" && (
+                  <BellRing className="" size={20} />
+                )}
               </>
             ) : (
               <div className="flex flex-row gap-1">
@@ -137,6 +141,9 @@ function MobileNavBar({
               </Button>
             </SheetTrigger>
             <SheetContent className="w-[400px] sm:w-[540px]" side="left">
+              <VisuallyHidden>
+                <DialogTitle>Navigation Menu</DialogTitle>
+              </VisuallyHidden>
               <div className="flex flex-col gap-2 pt-4">
                 {items.map((item) => (
                   <NavbarItems
@@ -242,31 +249,30 @@ function DesktopNavBar({
         <div className="flex items-center gap-1">
           {isAuthenticated ? (
             <>
-              <Button
-                variant="ghost"
-                onClick={() => router.push("/StudentDashboard/Notfications")}
-                className="rounded-md shadow-md border-2 dark:border-gray-700"
-              >
-                <BellRing className="dark:bg-gray-900" size={25} />
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => router.push("/UserProfile")}
-                className="rounded-md shadow-md border-2 dark:border-gray-700"
-              >
+              {userRole === "STUDENT" && (
+                <Button
+                  variant="ghost"
+                  onClick={() => router.push("/StudentDashboard/Notfications")}
+                  className="rounded-md shadow-md border-2 dark:border-gray-700"
+                >
+                  <BellRing className="dark:bg-gray-900" size={25} />
+                </Button>
+              )}
+              <Link href="/UserProfile">
                 {profilePicture ? (
-                  <div className="relative w-8 h-8">
+                  <div className="relative w-12 h-9">
                     <Image
                       src={profilePicture}
                       alt="Profile Picture"
                       fill
-                      className="rounded-full object-cover"
+                      className="rounded-sm object-cover"
+                      sizes="48px"
                     />
                   </div>
                 ) : (
                   <User size={25} />
                 )}
-              </Button>
+              </Link>
               <Button
                 onClick={logout}
                 className="border-red-500 bg-red-500 text-white hover:bg-red-900 dark:hover:bg-red-700 hover:text-white"
@@ -279,7 +285,7 @@ function DesktopNavBar({
               <Button
                 variant={"outline"}
                 className={cn(
-                  "bg-green-700 hover:bg-green-800 border-green-600  hover:border-2 text-white hover:text-white  font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline border-2 shadow-md"
+                  "bg-green-700 hover:bg-green-800 border-green-600 hover:border-2 text-white hover:text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline border-2 shadow-md"
                 )}
               >
                 <Link href="/sign-in">Sign In</Link>
@@ -324,3 +330,4 @@ function NavbarItems({ label, link }: { label: string; link: string }) {
 }
 
 export default Navbar;
+

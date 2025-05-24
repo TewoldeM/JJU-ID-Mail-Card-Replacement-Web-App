@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { GetApplicationsProgressResponseType } from "@/app/api/applications/GetApplicationProgress/route"; // Adjust path as needed
 import AdminWorkingProgress from "../AdminWorkingProgress/page";
 import { DateToUTCDate } from "@/app/lib/contants/DateToUTCDate";
-import SkeletonWrapper from "@/components/collection/SkeletonWrapper";
+import SkeletonWrapper from "@/components/collection/layouts/SkeletonWrapper";
 
 interface AdminWorkingProgressServerProps {
   from: Date;

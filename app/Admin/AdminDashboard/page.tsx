@@ -7,7 +7,7 @@ import History from "./History-Monthly-yearly/History";
 
 const Adminpage = async () => {
   return (
-    <div className="h-full bg-background">
+    <div className="h-full bg-background mb-4">
       <div className="border-b bg-card">
         <div className="container flex flex-wrap items-center justify-between gap-6 py-8 px-4">
           <p className="text-3xl font-bold ml-2">Hello, Admin 🙋‍♂️</p>
@@ -29,6 +29,14 @@ const Adminpage = async () => {
                 className="border-emerald-500 bg-emerald-950 text-white hover:bg-emerald-700 hover:text-white"
               >
                 Manage Student
+              </Button>
+            </Link>
+            <Link href="/Admin/AdminDashboard/contact-messages">
+              <Button
+                variant={"outline"}
+                className="border-emerald-500 bg-emerald-950 text-white hover:bg-emerald-700 hover:text-white"
+              >
+                Contact Messages
               </Button>
             </Link>
           </div>

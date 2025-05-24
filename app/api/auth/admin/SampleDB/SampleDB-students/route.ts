@@ -7,7 +7,6 @@ const JWT_SECRET = process.env.JWT_SECRET || "A5xj97s5GiJHD0518ZI02XjZPQU328";
 
 export async function GET(req: NextRequest) {
  const token= req.cookies.get("token")?.value
-  console.log("Token from cookies in /api/admin/Students:", token); // Debugging log
   if (!token) {
     return NextResponse.json(
       { error: "Unauthorized. Admins only." },

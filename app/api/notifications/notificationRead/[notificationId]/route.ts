@@ -39,7 +39,6 @@ if (!token) {
       where: { id: notificationId },
       data: { read: true },
     });
-    console.log("Updated notification:", updatedNotification);
     return NextResponse.json(
       { message: "Notification marked as read" },
       { status: 200 }

@@ -1,11 +1,14 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { cn } from '../../../../lib/utils';
+import React from "react";
+import { toast } from "react-hot-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { DataTable } from "@/components/collection/Admin-staff/SampleDB/data-table";
+import { columns } from "@/components/collection/Admin-staff/SampleDB/column";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-// Define the ValidStudent type based on your Prisma schema
 interface ValidStudent {
   Id: string;
   FirstName: string;
@@ -14,167 +17,115 @@ interface ValidStudent {
   Year: string;
   PhoneNumber: string | null;
   Email: string | null;
-  CreatedAt: Date;
-  UpdatedAt: Date;
+  CreatedAt: string;
+  UpdatedAt: string;
+  Collage: string;
+  Department: string;
+  Program: string;
 }
 
-export default function StudentsList() {
-  const [students, setStudents] = useState<ValidStudent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+interface StudentsResponse {
+  students: ValidStudent[];
+}
 
-  useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        const response = await fetch(
-          "/api/auth/admin/SampleDB/SampleDB-Students",
-          {
-            method: "GET",
-            credentials: "include",
-          }
-        );
+const SkeletonWrapper = () => (
+  <div className="flex flex-col gap-4">
+    {Array.from({ length: 5 }).map((_, index) => (
+      <Skeleton key={index} className="h-12 w-full" />
+    ))}
+  </div>
+);
 
-        if (!response.ok) {
-          if (response.status === 401) {
-            setError("Unauthorized. Please sign in as an admin.");
-          }
-          //!this is for debugging purposes only
-          // else if (response.status === 404) {
-          //   setError("Student list endpoint not found. Check API configuration.");
-          // } else {
-          //   const errorText = await response.text(); // Get the response as text for debugging
-          //   throw new Error(`Failed to fetch students: ${response.status} - ${errorText}`);
-          // }
-          setLoading(false);
-          return;
+const StudentList = () => {
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, isError, error } = useQuery<StudentsResponse>({
+    queryKey: ["valid-students"],
+    queryFn: async () => {
+      const response = await fetch(
+        "/api/auth/admin/SampleDB/SampleDB-Students",
+        {
+          method: "GET",
+          credentials: "include",
         }
-
-        const data = await response.json();
-        setStudents(data.students || []);
-      } catch (err: any) {
-        // console.error("Error fetching students:", err);
-        setError(err.message || "An error occurred while fetching students.");
-      } finally {
-        setLoading(false);
+      );
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Unauthorized. Please sign in as an admin.");
+        }
+        throw new Error("Failed to fetch students.");
       }
-    };
+      return response.json();
+    }
+  });
 
-    fetchStudents();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <p className="text-gray-700 dark:text-gray-300 h-screen">
-          Loading students...
-        </p>
+      <div className="max-w-full mx-auto mt-10 px-6">
+        <SkeletonWrapper />
       </div>
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <p className="text-red-500">{error},fialed fetching the studnet</p>
-        <button
-          onClick={() => router.push("/sign-in")}
-          className="ml-4 dark:bg-gray-900 dark:hover:bg-gray-950 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline border-2 shadow-md dark:border-gray-800 border-gray-500 hover:border-2 bg-gray-700 hover:bg-gray-800"
-        >
-          Sign In
-        </button>
+      <div className="max-w-full mx-auto mt-10 px-6 text-center">
+        <p className="text-red-500">
+          {error?.message || "Something went wrong."}
+        </p>
+        <Link href="/sign-in">
+          <Button className="mt-4 bg-gray-700 hover:bg-gray-800 dark:bg-gray-900 dark:hover:bg-gray-950 text-white">
+            Sign In
+          </Button>
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h2 className="text-3xl font-bold mb-6">JJU Student List</h2>
-      {students.length === 0 ? (
-        <p className="text-gray-700 dark:text-red-300">
-          No students found in the sample database.
-        </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-md">
-            <thead>
-              <tr className="bg-gray-900 dark:bg-gray-900">
-                <th className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-left text-gray-700 dark:text-gray-500">
-                  First Name
-                </th>
-                <th className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-left text-gray-700 dark:text-gray-300">
-                  Last Name
-                </th>
-                <th className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-left text-gray-700 dark:text-gray-300">
-                  Student ID
-                </th>
-                <th className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-left text-gray-700 dark:text-gray-300">
-                  Phone Number
-                </th>
-                <th className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-left text-gray-700 dark:text-gray-300">
-                  Email
-                </th>
-                <th className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-left text-gray-700 dark:text-gray-300">
-                  Year
-                </th>
-                <th className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-left text-gray-700 dark:text-gray-300">
-                  Created At
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map((student) => (
-                <tr
-                  key={student.Id}
-                  className="hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <td className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
-                    {student.FirstName}
-                  </td>
-                  <td className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
-                    {student.LastName}
-                  </td>
-                  <td className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
-                    {student.StudentId}
-                  </td>
-                  <td className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
-                    {student.PhoneNumber || "N/A"}
-                  </td>
-                  <td className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
-                    {student.Email || "N/A"}
-                  </td>
-                  <td className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
-                    {student.Year || "N/A"}
-                  </td>
-                  <td className="py-3 px-4 border-b border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
-                    {new Date(student.CreatedAt).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <>
+      <div className="border-b bg-card">
+        <div className="container flex flex-wrap items-center justify-between gap-6 py-8 px-12">
+          <div className="flex flex-col gap-2">
+            <p className="text-3xl font-bold">JJU Students List</p>
+            <p className="text-muted-foreground">
+             This is Sample DataBase of JJU
+            </p>
+          </div>
         </div>
-      )}
-      <Link href="/Admin/SampleDB/Add-student">
-        <Button className="bg-green-600 text-white hover:bg-green-700">
-          🧪 Add Student(JJU DB)
-        </Button>
-      </Link>
-    </div>
+      </div>
+      <div className="max-w-full mx-auto mt-10 px-6">
+        <Card className="mb-2">
+          <CardHeader>
+            <CardTitle>
+              <h1 className="text-3xl font-bold">You can Manage students</h1>
+            </CardTitle>
+            <CardDescription>
+              <h3>This is the list of student from the JJU main Database, you can add students</h3>
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <DataTable
+              columns={columns}
+              data={(data?.students || []).map((student) => ({
+                ...student,
+                CreatedAt: new Date(student.CreatedAt).toISOString(),
+                UpdatedAt: new Date(student.UpdatedAt).toISOString(),
+              }))}
+            />
+          </CardContent>
+        </Card>
+        <div className="mb-6">
+          <Link href="/Admin/SampleDB/Add-student">
+            <Button className="bg-green-600 text-white hover:bg-green-700">
+              🧪 Add Student (JJU DB)
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </>
   );
-}
-  //  <Link href="/Admin/SampleDB/Add-student">
-  //    <Button className="bg-blue-600 text-white hover:bg-blue-700">
-  //      🧪 Add Sample Student
-  //    </Button>
-  //  </Link>;
-  // 
-  // <Button
-      //   onClick={() => router.push("/admin/add-student")}
-      //   variant={"outline"}
-      //   className={cn(
-      //     "border-gray-500 dark:bg-black bg-gray-200 text-black dark:text-white dark:hover:bg-gray-800 dark:hover:text-white mt-2"
-      //   )}
-      // >
-      //   Add New Student
-      // </Button>
+};
+
+export default StudentList;

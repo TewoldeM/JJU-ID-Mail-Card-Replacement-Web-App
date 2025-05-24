@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import Roouteproviders from "@/components/collection/layouts/RooutProvider";
+import Roouteproviders from "@/components/collection/Providers/RooutProvider";
 import Footer from "@/components/collection/layouts/Footer";
 import ServerNavbar from "./UserProfile/Navbarfetchuser/page";
 import Providers from "@/components/collection/Providers/Providers";
 import { Toaster } from "react-hot-toast";
+import Footerpage from "./Footer/footer";
 
 // Load local fonts
 const geistSans = localFont({
@@ -73,7 +74,7 @@ export default function RootLayout({
             />
 
             {children}
-            <Footer />
+            <Footerpage />
           </Roouteproviders>
         </Providers>
       </body>

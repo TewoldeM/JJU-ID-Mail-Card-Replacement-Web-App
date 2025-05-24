@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,9 +15,28 @@ import {
   YAxis,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { DownloadIcon } from "lucide-react";
+import { download, generateCsv, mkConfig } from "export-to-csv";
 import CountUp from "react-countup";
 import { Period, Timeframe } from "@/app/lib/contants/HistoryType";
-import SkeletonWrapper from "@/components/collection/SkeletonWrapper";
+import SkeletonWrapper from "@/components/collection/layouts/SkeletonWrapper";
+
+// Define the CSV configuration
+const getCsvConfig = (timeframe: Timeframe, period: Period) =>
+  mkConfig({
+    fieldSeparator: ",",
+    decimalSeparator: ".",
+    useKeysAsHeaders: true,
+    filename: `history_report_${period.year}${
+      timeframe === "month"
+        ? "_" +
+          new Date(period.year, period.month).toLocaleString("default", {
+            month: "long",
+          })
+        : ""
+    }`,
+  });
 
 const History = () => {
   const [timeframe, setTimeframe] = useState<Timeframe>("month");
@@ -35,7 +55,6 @@ const History = () => {
         throw new Error(`Failed to fetch history data: ${response.statusText}`);
       }
       const data = await response.json();
-      console.log("History data:", data); // Debug: Log the API response
       return data;
     },
   });
@@ -49,6 +68,26 @@ const History = () => {
         item.Accepted > 0 || item.Rejected > 0
     );
 
+  // Function to handle CSV export
+  const handleExportCSV = (data: any[]) => {
+    if (!data || data.length === 0) return; // Guard against empty data
+    const exportData = data.map((item) => ({
+      Date: new Date(item.year, item.month, item.day || 1).toLocaleString(
+        "default",
+        {
+          month: timeframe === "year" ? "long" : "2-digit",
+          day: timeframe === "month" ? "2-digit" : undefined,
+          year: "numeric",
+        }
+      ),
+      Accepted: item.Accepted,
+      Rejected: item.Rejected,
+      Total: item.Accepted + item.Rejected,
+    }));
+    const csv = generateCsv(getCsvConfig(timeframe, period))(exportData);
+    download(getCsvConfig(timeframe, period))(csv);
+  };
+
   return (
     <div className="container ml-2">
       <h2 className="mt-12 text-3xl font-bold ml-2">History</h2>
@@ -61,6 +100,16 @@ const History = () => {
               timeframe={timeframe}
               setTimeframe={setTimeframe}
             />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 lg:flex"
+              onClick={() => handleExportCSV(historyDataQuery.data)}
+              disabled={!dataAvailable}
+            >
+              <DownloadIcon className="mr-2 h-4 w-4" />
+              Download Report as CSV
+            </Button>
             <div className="flex h-10 gap-2">
               <Badge
                 variant="outline"
@@ -225,21 +274,6 @@ function TooltipArrow({ label, value, bgColor, textColor }: ToolTipProps) {
       </div>
     </div>
   );
-}
-
-{
-  /* Here's a breakdown of the chart components: 
-         > BarChart: This is the main
-          component that renders the chart. 
-         >CartesianGrid: This component
-          renders the grid lines on the chart. 
-        
-        > XAxis and YAxis: These components
-          render the x-axis and y-axis labels and lines. 
-         > Bar: This component
-          renders the bars for the income and expense data. Tooltip: This
-          component renders a tooltip that displays additional information when
-          a bar is hovered. */
 }
 
 //?The toLocaleString() method is used to format a date object into

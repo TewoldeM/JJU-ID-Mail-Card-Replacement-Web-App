@@ -6,8 +6,6 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "A5xj97s5GiJHD0518ZI02XjZPQU328";
 
 export async function GET(req: NextRequest) {
-  console.log("Received GET request to /api/applications/check-previous");
-
 const token = req.cookies.get("token")?.value;
 if (!token) {
   console.log("No token found in cookie");
@@ -23,7 +21,6 @@ if (!token) {
     try {
       const result = await jwtVerify(token, secret, { clockTolerance: 15 });
       payload = result.payload;
-      console.log("Verified payload:", payload);
     } catch (jwtError: any) {
       console.error("JWT verification failed:", jwtError);
       return NextResponse.json(
@@ -33,7 +30,7 @@ if (!token) {
     }
 
     if (!payload || typeof payload !== "object") {
-      console.log("Payload is null or not an object:", payload);
+      console.log("Payload is null or not an object:");
       return NextResponse.json(
         { error: "Invalid token payload" },
         { status: 401 }
@@ -42,7 +39,6 @@ if (!token) {
 
     const userId = (payload as JWTPayload & { Id: string }).Id;
     if (!userId) {
-      console.log("No userId in payload:", payload);
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
@@ -52,7 +48,6 @@ if (!token) {
       if (!user) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
-      console.log("Authenticated user:", user);
     } catch (userError) {
       return NextResponse.json(
         { error: "Failed to fetch user" },
@@ -97,9 +92,6 @@ if (!token) {
         },
       });
 
-      console.log("Previous applications:", previousApplications);
-      console.log("ID Card applications this month:", idCardCount);
-      console.log("Mail Card applications this month:", mailCardCount);
     } catch (prevAppsError) {
       return NextResponse.json(
         { error: "Failed to fetch previous applications" },

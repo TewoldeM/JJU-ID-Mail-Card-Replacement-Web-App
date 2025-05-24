@@ -20,7 +20,7 @@ export type StudentsList = {
 
 // Factory function to generate columns with action handlers
 export const columns = (
-  handleDelete: (StudentId: string) => void,
+ 
   handleBlockUnblock: (StudentId: string, currentStatus: boolean) => void
 ): ColumnDef<StudentsList>[] => [
   {
@@ -145,13 +145,6 @@ export const columns = (
       const student = row.original;
       return (
         <div className="flex space-x-2">
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => handleDelete(student.StudentId)}
-          >
-            Delete
-          </Button>
           <Button
             variant={student.IsBlocked ? "outline" : "secondary"}
             size="sm"

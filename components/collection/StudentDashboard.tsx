@@ -153,12 +153,18 @@ const StudentDashboard = ({ user }: { user: userprops }) => {
           ) : (
             <p className="text-gray-500">No application history.</p>
           )}
-
-          <div className="mt-4">
-            <Button className="px-5 py-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
-              View Details
-            </Button>
-          </div>
+          {user.Applications.length > 1 ? (
+            <Link href="/applicationsDetail/applicationHistory">
+              <Button className="px-5 py-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
+                View Details
+              </Button>
+            </Link>
+          ) : (
+            ""
+          )}
+          {/* <div className="mt-4">
+     
+          </div> */}
         </div>
 
         {/* Notifications */}
@@ -180,11 +186,15 @@ const StudentDashboard = ({ user }: { user: userprops }) => {
           )}
 
           <div className="mt-4">
-            <Link href={`/StudentDashboard/Notfications`}>
-              <Button className="px-5 py-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
-                {user.Notifications.length > 3 ? "See More" : "View Details"}
-              </Button>
-            </Link>
+            {user.Notifications.length > 2 ? (
+              <Link href={`/StudentDashboard/Notfications`}>
+                <Button className="px-5 py-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
+                  {user.Notifications.length > 3 ? "See More" : "View Details"}
+                </Button>
+              </Link>
+            ) : (
+              ""
+            )}
           </div>
         </div>
       </div>

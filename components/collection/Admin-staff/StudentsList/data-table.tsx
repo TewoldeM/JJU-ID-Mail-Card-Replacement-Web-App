@@ -1,4 +1,5 @@
 "use client";
+
 import {
   ColumnDef,
   flexRender,
@@ -18,11 +19,21 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import React from "react";
+import { download, generateCsv, mkConfig } from "export-to-csv";
+import { DownloadIcon } from "lucide-react";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
 }
+
+// Define the CSV configuration
+const csvConfig = mkConfig({
+  fieldSeparator: ",",
+  decimalSeparator: ".",
+  useKeysAsHeaders: true,
+  filename: "table_data_export",
+});
 
 export function DataTable<TData, TValue>({
   columns,
@@ -40,8 +51,31 @@ export function DataTable<TData, TValue>({
     state: { sorting },
   });
 
+  // Function to handle CSV export
+  const handleExportCSV = (data: any[]) => {
+    if (!data || data.length === 0) return; // Guard against empty data
+    const csv = generateCsv(csvConfig)(data);
+    download(csvConfig)(csv);
+  };
+
   return (
     <div className="w-full overflow-x-auto">
+      <div className="flex justify-end py-4">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 lg:flex"
+          onClick={() => {
+            const exportData = table
+              .getFilteredRowModel()
+              .rows.map((row) => row.original);
+            handleExportCSV(exportData);
+          }}
+        >
+          <DownloadIcon className="mr-2 h-4 w-4" />
+          Export to CSV
+        </Button>
+      </div>
       <div className="rounded-md border w-full min-w-full">
         <Table className="w-full table-auto">
           <TableHeader>
@@ -117,4 +151,3 @@ export function DataTable<TData, TValue>({
     </div>
   );
 }
-

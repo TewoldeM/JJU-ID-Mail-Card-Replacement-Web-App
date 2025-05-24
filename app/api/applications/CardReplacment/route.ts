@@ -7,11 +7,8 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "A5xj97s5GiJHD0518ZI02XjZPQU328";
 
 export async function POST(req: NextRequest) {
-  console.log("Received POST request to /api/applications/CardReplacment");
-
   const token = req.cookies.get("token")?.value;
   if (!token) {
-    console.log("No token found in cookie");
     return NextResponse.json(
       { error: "Unauthorized: No token found" },
       { status: 401 }
@@ -24,9 +21,7 @@ export async function POST(req: NextRequest) {
     try {
       const result = await jwtVerify(token, secret, { clockTolerance: 15 });
       payload = result.payload;
-      console.log("Verified payload:", payload);
     } catch (jwtError: any) {
-      console.error("JWT verification failed:", jwtError);
       return NextResponse.json(
         { error: "Invalid or expired token" },
         { status: 401 }
@@ -34,7 +29,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (!payload || typeof payload !== "object") {
-      console.log("Payload is null or not an object:", payload);
       return NextResponse.json(
         { error: "Invalid token payload" },
         { status: 401 }
@@ -43,7 +37,6 @@ export async function POST(req: NextRequest) {
 
     const userId = (payload as JWTPayload & { Id: string }).Id;
     if (!userId) {
-      console.log("No userId in payload:", payload);
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
@@ -63,13 +56,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (
-      !file.fileName ||
-      !file.fileType ||
-      !file.fileSize ||
-      !file.fileData ||
-      !file.fileType.startsWith("image/")
-    ) {
+    if ( !file.fileName ||!file.fileType || !file.fileSize || !file.fileData ||!file.fileType.startsWith("image/")) {
       return NextResponse.json(
         {
           error:
@@ -85,7 +72,6 @@ export async function POST(req: NextRequest) {
       if (!user) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
-      console.log("Authenticated user:", user);
     } catch (userError) {
       return NextResponse.json(
         { error: "Failed to fetch user" },
@@ -106,13 +92,11 @@ export async function POST(req: NextRequest) {
         },
       });
       if (!validStudent) {
-        console.log("User is not a valid student at JJU");
         return NextResponse.json(
           { error: "You are not a valid student at JJU. Access denied." },
           { status: 403 }
         );
       }
-      console.log("Validated student:", validStudent);
     } catch (studentError) {
       return NextResponse.json(
         { error: "Failed to validate student" },
@@ -211,7 +195,7 @@ export async function POST(req: NextRequest) {
     const verificationToken = randomBytes(16).toString("hex");
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // First transaction: Create PendingApplication and Application
+    // Create PendingApplication and Application in a transaction
     const [pendingApplication, application] = await prisma.$transaction([
       prisma.pendingApplication.create({
         data: {
@@ -238,7 +222,7 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
-    // Second transaction: Create File and update histories
+    // Create File and update histories in a transaction
     const [fileRecord] = await prisma.$transaction([
       prisma.file.create({
         data: {
@@ -297,13 +281,6 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
-    console.log(
-      "Application created with ID:",
-      application.id,
-      "File ID:",
-      fileRecord.id
-    );
-
     const verificationLink = `${process.env.NEXT_PUBLIC_URL}/applications/Verify-application?token=${verificationToken}`;
     const emailResponse = await fetch(
       `${process.env.NEXT_PUBLIC_URL}/api/mail`,
@@ -320,7 +297,6 @@ export async function POST(req: NextRequest) {
 
     if (!emailResponse.ok) {
       const errorText = await emailResponse.text();
-      console.error("Failed to send email:", errorText);
       return NextResponse.json(
         { error: "Failed to send verification email", details: errorText },
         { status: 500 }
@@ -329,9 +305,6 @@ export async function POST(req: NextRequest) {
 
     if (!hasPreviousApplications) {
       try {
-        console.log(
-          "First application detected. Updating user with Collage, Department, Program..."
-        );
         await prisma.user.update({
           where: { Id: userId },
           data: {
@@ -340,13 +313,7 @@ export async function POST(req: NextRequest) {
             Program,
           },
         });
-        console.log("User updated successfully with:", {
-          Collage,
-          Department,
-          Program,
-        });
       } catch (updateError) {
-        console.error("Failed to update user:", updateError);
         return NextResponse.json(
           { error: "Failed to update user data" },
           { status: 500 }
@@ -355,7 +322,6 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      console.log("Creating notification...");
       await prisma.notification.create({
         data: {
           StudentId: user.StudentId,
@@ -366,7 +332,6 @@ export async function POST(req: NextRequest) {
           read: false,
         },
       });
-      console.log("Notification created");
     } catch (notifyError: any) {
       return NextResponse.json(
         {
@@ -386,10 +351,6 @@ export async function POST(req: NextRequest) {
       { status: 202 }
     );
   } catch (error: any) {
-    console.error("Unexpected error in API route:", {
-      message: error.message,
-      stack: error.stack,
-    });
     return NextResponse.json(
       {
         error: "Internal server error",

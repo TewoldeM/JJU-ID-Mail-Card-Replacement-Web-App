@@ -1,7 +1,7 @@
 "use client";
 
 import Statuscards from "@/components/collection/Admin-staff/Statuscards";
-import SkeletonWrapper from "@/components/collection/SkeletonWrapper";
+import SkeletonWrapper from "@/components/collection/layouts/SkeletonWrapper";
 import { useEffect, useState } from "react";
 import { DateRange } from "react-day-picker";
 

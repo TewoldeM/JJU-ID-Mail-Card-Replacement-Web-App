@@ -1,9 +1,22 @@
 "use client";
 import { useState } from "react";
 
+interface FormState {
+  name: string;
+  email: string;
+  message: string;
+}
+
 const Contact = () => {
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
+  const [form, setForm] = useState<FormState>({
+    name: "",
+    email: "",
+    message: "",
+  });
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
+    "idle"
+  );
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -11,19 +24,38 @@ const Contact = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setStatus("sending");
+  const handleSubmit = async () => {
+    if (!form.name || !form.email || !form.message) {
+      setErrorMessage("Please fill out all fields.");
+      return;
+    }
 
-    // Simulate form submission
-    setTimeout(() => {
+    setStatus("sending");
+    setErrorMessage("");
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
+
       setStatus("sent");
       setForm({ name: "", email: "", message: "" });
-    }, 1000);
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage("An error occurred. Please try again later.");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
       <div className="max-w-2xl w-full space-y-8">
         <div className="text-center">
           <h1 className="text-5xl font-bold text-gray-900 dark:text-white">
@@ -35,10 +67,7 @@ const Contact = () => {
           </p>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white dark:bg-gray-900 p-8 rounded-lg shadow-md space-y-6"
-        >
+        <div className="bg-white dark:bg-gray-900 p-8 rounded-lg shadow-md space-y-6">
           <div>
             <label
               htmlFor="name"
@@ -92,7 +121,8 @@ const Contact = () => {
 
           <div>
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 transition dark:bg-green-500 dark:hover:bg-green-600"
               disabled={status === "sending"}
             >
@@ -105,7 +135,12 @@ const Contact = () => {
               Message sent! We'll respond soon.
             </p>
           )}
-        </form>
+          {status === "error" && (
+            <p className="text-sm text-red-600 dark:text-red-400 text-center">
+              {errorMessage}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -19,13 +19,14 @@ import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 import {
-  Collages,
+  Colleges,
   Departments,
   Programs,
   Reasons,
 } from "@/app/lib/contants/constants-IdCrad-R";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
+import { FileUpload } from "@/components/ui/file-upload";
 
 interface Role {
   name: string;
@@ -91,20 +92,23 @@ const formSchema = z.object({
       MAIL_CARD_REPLACEMENT: z.number().optional(),
     })
     .optional(),
-  file: z.instanceof(File).optional(),
+  file: z
+    .instanceof(File)
+    .refine((file) => file?.type?.startsWith("image/"), {
+      message: "File must be an image",
+    })
+    .optional(),
 });
 
 const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
   const router = useRouter();
   const { loading, isAuthenticated } = useAuth();
   const [hasPreviousApplications, setHasPreviousApplications] = useState(false);
-  const [previousData, setPreviousData] = useState<{
-    Collage: string;
-    Department: string;
-    Program: string;
-  } | null>(null);
+  const [previousData, setPreviousData] = useState<{Collage: string;Department: string;Program: string; } | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedCollege, setSelectedCollege] = useState<string>("");
+  const [filteredDepartments, setFilteredDepartments] = useState(Departments);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -153,6 +157,10 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
           form.setValue("Collage", collage);
           form.setValue("Department", department);
           form.setValue("Program", program);
+          setSelectedCollege(collage);
+          setFilteredDepartments(
+            Departments.filter((dept) => dept.college === collage)
+          );
         }
 
         form.setValue("monthlyApplicationCounts", {
@@ -169,6 +177,18 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
 
     fetchPreviousApplicationData();
   }, [isAuthenticated, user, form]);
+
+  useEffect(() => {
+    if (selectedCollege) {
+      const filtered = Departments.filter(
+        (dept) => dept.college === selectedCollege
+      );
+      setFilteredDepartments(filtered);
+      form.setValue("Department", ""); // Reset department when college changes
+    } else {
+      setFilteredDepartments(Departments);
+    }
+  }, [selectedCollege, form]);
 
   const convertFileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -221,7 +241,6 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
     try {
       setIsUploading(true);
 
-      // Convert file to Base64
       const base64Data = await convertFileToBase64(values.file);
       const fileData = {
         fileName: values.file.name,
@@ -230,7 +249,6 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
         fileData: base64Data,
       };
 
-      // Submit application with file data
       const response = await axios.post(
         "/api/applications/CardReplacment",
         {
@@ -246,14 +264,14 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
 
       if (response.status === 202) {
         setIsVerifying(true);
-        form.setValue("file", undefined); // Clear file input
+        form.setValue("file", undefined);
         toast.success("Please check your email to verify your application.");
       } else {
         const applicationId = response.data?.id;
         if (!applicationId) {
           throw new Error("Invalid response from server. Missing 'id' field.");
         }
-        form.setValue("file", undefined); // Clear file input
+        form.setValue("file", undefined);
         router.push(`/applicationsDetail/${applicationId}/Detail`);
         toast.success(
           `Your ${values.applicationType === "ID_CARD_REPLACEMENT" ? "ID card" : "MailCard"} replacement application was successfully submitted`
@@ -315,7 +333,7 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                             placeholder="First Name"
                             {...field}
                             disabled
-                            className="dark:text-gray-100 border border-gray-500 rounded-none px-2 py-1"
+                            className="bg-white dark:bg-gray-900 dark:text-gray-100 border border-gray-500 px-2 py-1"
                           />
                         </FormControl>
                         <FormMessage />
@@ -439,7 +457,7 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                             {...field}
                             value={field.value || ""}
                             onChange={(e) => field.onChange(e.target.value)}
-                            className="dark:text-gray-100 border border-gray-500 rounded-none px-2 py-1 w-full"
+                            className="bg-white dark:bg-gray-900 dark:text-gray-100 border border-gray-500 px-2 py-1 w-full"
                           >
                             <option value="" className="text-sm">
                               Select Reason
@@ -470,7 +488,7 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                             {...field}
                             value={field.value || ""}
                             onChange={(e) => field.onChange(e.target.value)}
-                            className="dark:text-gray-100 border border-gray-800 rounded-none px-2 py-1 w-full"
+                            className="bg-white dark:bg-gray-900 dark:text-gray-100 border border-gray-500 px-2 py-1 w-full"
                           >
                             <option value="">Select Card Type</option>
                             <option value="ID_CARD_REPLACEMENT">
@@ -490,18 +508,21 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                     name="Collage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Collage</FormLabel>
+                        <FormLabel>College</FormLabel>
                         <FormControl>
                           <select
                             {...field}
                             value={field.value || ""}
-                            onChange={(e) => field.onChange(e.target.value)}
-                            className="dark:text-gray-100 border border-gray-700 rounded-none px-2 py-1 w-full"
+                            onChange={(e) => {
+                              field.onChange(e.target.value);
+                              setSelectedCollege(e.target.value);
+                            }}
+                            className="bg-white dark:bg-gray-900 dark:text-gray-100 border border-gray-500 px-2 py-1 w-full"
                           >
                             <option value="">
-                              {previousData?.Collage || "Select Collage"}
+                              {previousData?.Collage || "Select College"}
                             </option>
-                            {Collages.map((option) => (
+                            {Colleges.map((option) => (
                               <option key={option.value} value={option.value}>
                                 {option.label}
                               </option>
@@ -523,12 +544,15 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                             {...field}
                             value={field.value || ""}
                             onChange={(e) => field.onChange(e.target.value)}
-                            className="dark:text-gray-100 border border-gray-700 rounded-none px-2 py-1 w-full"
+                            className="bg-white dark:bg-gray-900 dark:text-gray-100 border border-gray-500 px-2 py-1 w-full"
+                            disabled={
+                              !selectedCollege && !previousData?.Department
+                            }
                           >
                             <option value="">
                               {previousData?.Department || "Select Department"}
                             </option>
-                            {Departments.map((option) => (
+                            {filteredDepartments.map((option) => (
                               <option key={option.value} value={option.value}>
                                 {option.label}
                               </option>
@@ -550,7 +574,7 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                             {...field}
                             value={field.value || ""}
                             onChange={(e) => field.onChange(e.target.value)}
-                            className="dark:text-gray-100 border border-gray-700 rounded-none px-2 py-1 w-full"
+                            className="bg-white dark:bg-gray-900 dark:text-gray-100 border border-gray-500 px-2 py-1 w-full"
                           >
                             <option value="">
                               {previousData?.Program || "Select Program"}
@@ -576,18 +600,17 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                         name="file"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Upload File (Image)</FormLabel>
+                            <FormLabel>Upload Photo (Image)</FormLabel>
                             <FormControl>
-                              <Input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
+                              <FileUpload
+                                onChange={(files) => {
+                                  const file = files[0];
                                   if (file) {
-                                    field.onChange(file);
+                                    form.setValue("file", file, {
+                                      shouldValidate: true,
+                                    });
                                   }
                                 }}
-                                className="dark:text-gray-100 border border-gray-700 rounded-none px-2 py-1 w-full"
                               />
                             </FormControl>
                             <FormMessage />

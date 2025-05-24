@@ -90,9 +90,6 @@ export async function POST(req: NextRequest) {
       year: user.Year,
       Roles: user.Roles.map((role) => role.name), // Ensure Roles is an array of strings
     };
-
-    console.log("JWT Token Payload for sign-in:", tokenPayload);
-
     const token = await new SignJWT(tokenPayload)
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("1h")
@@ -102,9 +99,6 @@ export async function POST(req: NextRequest) {
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("7d")
       .sign(new TextEncoder().encode(REFRESH_TOKEN_SECRET));
-
-    console.log("Generated token:", token);
-    console.log("Generated refresh token:", refreshToken);
 
     // Create response
     const response = NextResponse.json(

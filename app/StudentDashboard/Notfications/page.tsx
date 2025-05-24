@@ -8,20 +8,31 @@ interface User {
   StudentId: string;
 }
 
-export default function StudentDashboard() {
+export default function NotificationPage() {
   const { user, loading } = useAuth();
 
+  // Show loading state while authentication is being resolved
   if (loading) {
-    return <div className="h-screen">Loading...</div>;
-  }
-
-  if (!user) {
     return (
-      <div className="h-screen">Please sign in to view your dashboard.</div>
+      <div className="flex flex-col justify-center items-center h-screen">
+        Loading...
+      </div>
     );
   }
 
-  console.log("Authenticated StudentId:", user.StudentId); // Log to verify
+  // Handle case where user is not authenticated
+  if (!user || !user.StudentId) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen">
+        Please sign in to view your Notifications.
+      </div>
+    );
+  }
+
+  console.log("Authenticated user:", {
+    id: user.Id,
+    StudentId: user.StudentId,
+  }); // Enhanced logging
 
   return (
     <div>

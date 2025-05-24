@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import toast from "react-hot-toast";
 
 interface Notification {
   id: string;
@@ -24,39 +26,48 @@ interface Props {
 export default function Notifications({ StudentId }: Props) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const { token } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchNotifications = async () => {
+      if (!token || !StudentId) {
+        toast.error("Please log in to view notifications");
+        router.push("/sign-in");
+        return;
+      }
+
       try {
-        console.log("Fetching notifications for StudentId:", StudentId);
         const res = await fetch(`/api/notifications/${StudentId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         });
-        console.log("Response status:", res.status);
-        if (!res.ok) throw new Error("Failed to fetch notifications");
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || "Failed to fetch notifications");
+        }
         const data: Notification[] = await res.json();
-        console.log("Fetched notifications:", data);
         setNotifications(data);
       } catch (error: any) {
-        console.error("Error fetching notifications:", error);
+        console.error("Error fetching notifications:", error.message);
+        toast.error("Failed to load notifications");
       }
     };
 
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 10000); // Refreshes every 10 seconds
     return () => clearInterval(interval);
-  }, [StudentId, token]);
+  }, [StudentId, token, router]);
 
   const markAsRead = async (notificationId: string) => {
     if (!token) {
-      console.error("No token available for authentication");
+      toast.error("Please log in to mark notifications as read");
+      router.push("/sign-in");
       return;
     }
 
     try {
-      console.log("Marking notification as read, ID:", notificationId);
       const res = await fetch(
         `/api/notifications/notificationRead/${notificationId}`,
         {
@@ -85,9 +96,10 @@ export default function Notifications({ StudentId }: Props) {
           )
           .filter((notif) => !notif.read)
       );
-      console.log("Notification marked as read successfully");
+      toast.success("Notification marked as read");
     } catch (error: any) {
       console.error("Error marking notification as read:", error.message);
+      toast.error("Failed to mark notification as read");
     }
   };
 
@@ -179,19 +191,22 @@ export default function Notifications({ StudentId }: Props) {
   };
 
   return (
-    <div className="flex flex-col justify-center items-center p-2">
-      <h3 className="text-2xl text-green-600">
+    <div className="flex flex-col justify-center items-center p-2 min-h-screen -mt-14 md:-mt-32">
+      <h3 className="text-2xl text-green-600 mb-4">
         Notifications ({notifications.length})
       </h3>
       {notifications.length === 0 ? (
         <p>No new notifications</p>
       ) : (
-        <ul className="list-none">
-          <div
-            className={cn("flex flex-col justify-center items-center gap-2")}
-          >
+        <ul
+          className={cn(
+            "list-none w-full max-w-lg",
+            notifications.length > 2 && "max-h-[400px] overflow-y-auto"
+          )}
+        >
+          <div className="flex flex-col justify-center items-center gap-2">
             {notifications.map((notif) => (
-              <li key={notif.id} className="mb-3">
+              <li key={notif.id} className="mb-3 w-full">
                 <Card className="flex justify-center items-center flex-col gap-4 px-4 py-4">
                   <div className="text-center">
                     <h1 className="text-muted-foreground w-96">
@@ -215,9 +230,11 @@ export default function Notifications({ StudentId }: Props) {
                       <Button
                         variant={"outline"}
                         className={cn(
-                          "bg-green-700 hover:bg-green-800 border-green-600 hover:border-2 text-white hover:text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline border-2 shadow-md"
+                          "bg-green-700 hover:bg-green-800 border-green-600 hover:border-2 text-white hover:text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline border-2 shadow-md",
+                          !token && "opacity-50 cursor-not-allowed"
                         )}
                         onClick={() => markAsRead(notif.id)}
+                        disabled={!token}
                       >
                         Mark as Read
                       </Button>

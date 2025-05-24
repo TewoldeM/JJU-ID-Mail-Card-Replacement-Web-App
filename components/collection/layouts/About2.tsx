@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Button } from "../ui/button";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 const AboutUS = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -11,7 +12,7 @@ const AboutUS = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div
         className={`max-w-4xl w-full space-y-8 transform transition-all duration-1000 ${
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
@@ -46,10 +47,11 @@ const AboutUS = () => {
             collect their new ID or mail card. In case of rejection, a reason
             will be provided for transparency and guidance.
           </p>
-
-          <button className="mt-6 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition dark:bg-green-500 dark:hover:bg-green-600">
+          <Link href="applications/IdandMailCardReplacement">
+          <Button className="mt-6 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition dark:bg-green-500 dark:hover:bg-green-600">
             Apply for Replacement
-          </button>
+          </Button>
+          </Link>
         </div>
       </div>
     </div>

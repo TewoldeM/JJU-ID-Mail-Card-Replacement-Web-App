@@ -20,9 +20,6 @@ const studentRoutes = [
 
 export async function middleware(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
-  console.log("Token from cookies:", token);
-  console.log("Requested path:", req.nextUrl.pathname);
-
   const unprotectedRoutes = ["/sign-in", "/sign-up"];
   if (
     unprotectedRoutes.some((route) => req.nextUrl.pathname.startsWith(route))
@@ -40,8 +37,6 @@ export async function middleware(req: NextRequest) {
     const secret = new TextEncoder().encode(JWT_SECRET);
     const { payload } = await jwtVerify(token, secret, { clockTolerance: 1 });
     const userRoles = (payload as JWTPayload & { Roles: string[] }).Roles || [];
-    console.log("Decoded payload:", payload);
-
     const isAdmin = userRoles.includes("ADMIN");
     const isAdminRoute = adminRoutes.some((route) =>
       req.nextUrl.pathname.startsWith(route.replace(":path*", ""))
@@ -50,14 +45,6 @@ export async function middleware(req: NextRequest) {
       req.nextUrl.pathname.startsWith(route.replace(":path*", ""))
     );
 
-    console.log(
-      "isAdmin:",
-      isAdmin,
-      "isAdminRoute:",
-      isAdminRoute,
-      "isStudentRoute:",
-      isStudentRoute
-    );
 
     if (isAdminRoute) {
       if (isAdmin) return NextResponse.next();
@@ -78,7 +65,6 @@ export async function middleware(req: NextRequest) {
     const response = await fetch(`${req.nextUrl.origin}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    console.log("Response status from /api/auth/me:", response.status);
 
     if (!response.ok) {
       console.warn("Token validation failed via /api/auth/me");
@@ -87,7 +73,6 @@ export async function middleware(req: NextRequest) {
     }
 
     const userData = await response.json();
-    console.log("User data from /api/auth/me:", userData);
     const isAdmin = userData.Roles?.some(
       (role: { name: string }) => role.name === "ADMIN"
     );

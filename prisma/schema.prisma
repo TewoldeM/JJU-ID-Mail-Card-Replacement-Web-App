@@ -7,6 +7,8 @@ generator client {
   provider = "prisma-client-js"
 }
 
+
+
 model User {
   Id                   String         @id @default(uuid())
   FirstName            String
@@ -176,6 +178,9 @@ model ValidStudent {
   FirstName   String
   LastName    String
   StudentId   String   @unique // Unique identifier for the student (e.g., JJU student ID)
+  Collage     String
+  Department  String
+  Program     String
   PhoneNumber String // Optional phone number (matches User.phoneNumber format)
   Year        String
   Email       String   @unique // Optional Email, can be used for validation
@@ -184,7 +189,17 @@ model ValidStudent {
 
   @@index([StudentId, Email])
 }
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  status    MessageStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  @@index([createdAt])
+}
 enum CardType {
   ID_CARD
   MAIL_CARD
@@ -212,4 +227,10 @@ enum FileCategory {
 enum ApplicationType {
   ID_CARD_REPLACEMENT
   MAIL_CARD_REPLACEMENT
+}
+
+enum MessageStatus {
+  PENDING
+  READ
+  RESOLVED
 }

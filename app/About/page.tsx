@@ -1,4 +1,4 @@
-import AboutUS from "@/components/collection/About2";
+import AboutUS from "@/components/collection/layouts/About2";
 import React from "react";
 
 const AboutPage = () => {
@@ -10,4 +10,3 @@ const AboutPage = () => {
 };
 
 export default AboutPage;
-// {/* <AboutTheWebApp /> */ } import AboutTheWebApp from '@/components/collection/About';

@@ -6,13 +6,29 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "A5xj97s5GiJHD0518ZI02XjZPQU328";
 
 export async function POST(req: NextRequest) {
-  const { refreshToken } = await req.json();
-
-  if (!refreshToken) {
+  // Check if the request has a valid JSON content type
+  if (req.headers.get("content-type") !== "application/json") {
     return NextResponse.json(
-      { error: "Refresh token is required" },
-      { status: 400 }
+      { error: "Content-Type must be application/json" },
+      { status: 415 }
     );
+  }
+
+  let refreshToken;
+  try {
+    // Attempt to parse the JSON body
+    const body = await req.json();
+    refreshToken = body.refreshToken;
+
+    if (!refreshToken) {
+      return NextResponse.json(
+        { error: "Refresh token is required" },
+        { status: 400 }
+      );
+    }
+  } catch (error) {
+    // Handle JSON parsing errors
+    return NextResponse.json({ error: "Invalid JSON format" }, { status: 400 });
   }
 
   try {

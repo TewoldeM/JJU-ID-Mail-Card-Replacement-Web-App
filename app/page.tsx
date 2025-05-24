@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Role, User } from "@prisma/client";
 import Cookies from "js-cookie";
 import HeroImageslaider from "@/components/collection/layouts/HeroImageslaider";
-import AboutTheWebApp from "@/components/collection/About";
+import AboutTheWebApp from "@/components/collection/layouts/About";
 import GuideSteps from "@/components/collection/GuideSteps";
 import { Separator } from "@/components/ui/separator";
 import { SpotlightPreview } from "@/components/collection/Acentry/SpotLight";

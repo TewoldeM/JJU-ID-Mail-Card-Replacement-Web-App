@@ -15,7 +15,6 @@ export async function GET(req: NextRequest) {
   try {
     const secret = new TextEncoder().encode(JWT_SECRET);
     const { payload } = await jwtVerify(token, secret, { clockTolerance: 30,});
-    console.log("Token payload:", payload); // Log payload for debugging
     const userId = (payload as JWTPayload & { Id?: string })?.Id;
     if (!userId) {
       console.log("User ID not found or invalid in token payload in /api/auth/me:", payload);
@@ -44,7 +43,6 @@ export async function GET(req: NextRequest) {
       console.log("User not found for ID:", userId, "in /api/auth/me");
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-    console.log("User data retrieved in /api/auth/me:", user);
     return NextResponse.json(user, { status: 200 });
   } catch (error:any) {
     console.error("Error verifying token in /api/auth/me:", error);

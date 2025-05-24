@@ -1,62 +1,139 @@
-import { Facebook, Instagram, Linkedin, Youtube } from "lucide-react";
+"use client";
 import React from "react";
-import Dashboard from "../../../app/Admin/AdminDashboard/page";
-import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { Facebook, Instagram, Twitter, Send } from "lucide-react";
 
-const Footer = () => {
+// Navigation items for students
+const studentItems = [
+  { label: "Card Replacement", link: "/applications/IdandMailCardReplacement" },
+  { label: "Dashboard", link: "/StudentDashboard" },
+  { label: "About", link: "/About" },
+  { label: "Contact", link: "/Contact" },
+];
+
+// Navigation items for admins
+const adminItems = [
+  { label: "Admin Dashboard", link: "/Admin/AdminDashboard" },
+  { label: "Manage Student", link: "/Admin/AdminDashboard/ManageStudents" },
+  { label: "Applications", link: "/Admin/Applications-Data-Table" },
+];
+
+interface FooterProps {
+  userRole: string | null;
+}
+
+const Footer: React.FC<FooterProps> = ({ userRole }) => {
+  const { isAuthenticated, loading } = useAuth();
+  const quickLinks = userRole === "ADMIN" ? adminItems : studentItems;
+
+  // Prevent rendering until auth state is resolved
+  if (loading) {
+    return null;
+  }
+
   return (
-    <>
-      <Separator className="mt-4"/>
-      <div className="flex flex-col md:flex-row justify-between items-center p-32 gap-8 ">
-      <div className="flex flex-row gap-14 md:gap-64 items-center justify-center">
-        <div className="">
-          <div className="flex flex-col gap-4 ">
-            <h2 className="text-xl font-bold">Quick Links</h2>
-            <h3 className="cursor-pointer  font-semibold">
-              ID Card Replacment
+    <footer className="bg-white dark:bg-gray-950  text-gray-900 dark:text-white py-12">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Quick Links Section */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-200">
+              Quick Links
             </h3>
-            <h3 className="cursor-pointer  font-semibold">
-              Mail Card Replacment
+            <ul className="space-y-2">
+              {quickLinks.map((item) => (
+                <li key={item.label}>
+                  <Link
+                    href={item.link}
+                    className="text-gray-600 dark:text-white hover:text-gray-900 transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Social Media Section */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-200">
+              Follow Us
             </h3>
-            <h3 className="cursor-pointer  font-semibold">My Application</h3>
-            <h3 className="cursor-pointer  font-semibold">Dashboard</h3>
+            <div className="flex space-x-4">
+              <Link
+                href="https://facebook.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-600 dark:text-white hover:text-gray-900 transition-colors"
+                aria-label="Facebook"
+              >
+                <Facebook size={24} />
+              </Link>
+              <Link
+                href="https://x.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-600 dark:text-white hover:text-gray-900 transition-colors"
+                aria-label="X"
+              >
+                <Twitter size={24} />
+              </Link>
+              <Link
+                href="https://telegram.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-600 dark:text-white hover:text-gray-900 transition-colors"
+                aria-label="Telegram"
+              >
+                <Send size={24} />
+              </Link>
+              <Link
+                href="https://instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-600 dark:text-white hover:text-gray-900 transition-colors"
+                aria-label="Instagram"
+              >
+                <Instagram size={24} />
+              </Link>
+            </div>
+          </div>
+
+          {/* Contact Info Section */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-200">
+              Contact Us
+            </h3>
+            <p className="text-gray-600 dark:text-white">
+              Email:{" "}
+              <a
+                href="mailto:support@example.com"
+                className="hover:text-gray-900 transition-colors"
+              >
+                support@example.com
+              </a>
+            </p>
+            <p className="text-gray-600 dark:text-white">
+              Phone:{" "}
+              <a
+                href="tel:+1234567890"
+                className="hover:text-gray-900 transition-colors"
+              >
+                +1 (234) 567-890
+              </a>
+            </p>
           </div>
         </div>
-        <div className="">
-          <div className="flex flex-col gap-4 ">
-            <h2 className="text-xl font-bold">Services</h2>
-            <h3 className="cursor-pointer  font-semibold">About</h3>
-            <h3 className="cursor-pointer  font-semibold">Term</h3>
-            <h3 className="cursor-pointer  font-semibold">
-              ID Card Replacment
-            </h3>
-            <h3 className="cursor-pointer  font-semibold">
-              Mail Card Replacment
-            </h3>
-          </div>
+
+        {/* Copyright Section */}
+        <div className="mt-8 pt-8 border-t border-gray-200 text-center">
+          <p className="text-gray-600 dark:text-white">
+            © {new Date().getFullYear()} JJU. All rights reserved.
+          </p>
         </div>
       </div>
-      <div className="flex flex-col gap-4 justify-center items-center">
-        <h2 className="font-bold">Follows us</h2>
-        <div className="flex flex-row gap-8 ">
-          <Facebook
-            className="bg-blue-400 text-gray-300 rounded-md"
-            size={40}
-          />
-          <Instagram
-            className="bg-red-400 text-gray-300 rounded-md"
-            size={40}
-          />
-          <Youtube className="bg-red-600 text-gray-300 rounded-md" size={40} />
-          <Linkedin
-            className="bg-blue-500 text-gray-300 rounded-md"
-            size={40}
-          />
-        </div>
-      </div>
-    </div>
-    </>
-    
+    </footer>
   );
 };
 

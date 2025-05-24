@@ -20,16 +20,24 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import React from "react";
+import { download, generateCsv, mkConfig } from "export-to-csv";
+import { DownloadIcon } from "lucide-react";
+import { ApplicationData } from "@/components/collection/Admin-staff/columns";
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
-  data: TData[];
+// Define the CSV configuration
+const csvConfig = mkConfig({
+  fieldSeparator: ",",
+  decimalSeparator: ".",
+  useKeysAsHeaders: true,
+  filename: "applications_export",
+});
+
+interface DataTableProps {
+  columns: ColumnDef<ApplicationData>[];
+  data: ApplicationData[];
 }
 
-export function DataTable<TData, TValue>({
-  columns,
-  data,
-}: DataTableProps<TData, TValue>) {
+export function DataTable({ columns, data }: DataTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const table = useReactTable({
@@ -44,8 +52,42 @@ export function DataTable<TData, TValue>({
     },
   });
 
+  // Function to handle CSV export
+  const handleExportCSV = (data: any[]) => {
+    if (!data || data.length === 0) return; // Guard against empty data
+    const csv = generateCsv(csvConfig)(data);
+    download(csvConfig)(csv);
+  };
+
   return (
     <div>
+      <div className="flex justify-end py-4">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 lg:flex"
+          onClick={() => {
+            const exportData = table.getFilteredRowModel().rows.map((row) => ({
+              id: row.original.id,
+              StudentId: row.original.StudentId,
+              applicationType: row.original.applicationType,
+              reason: row.original.reason,
+              status: row.original.status,
+              email: row.original.email,
+              Collage: row.original.Collage,
+              Department: row.original.Department,
+              Program: row.original.Program,
+              createdAt: row.original.createdAt,
+              Year: row.original.Year,
+              applicationDetail: row.original.applicationDetail,
+            }));
+            handleExportCSV(exportData);
+          }}
+        >
+          <DownloadIcon className="mr-2 h-4 w-4" />
+          Export to CSV
+        </Button>
+      </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>

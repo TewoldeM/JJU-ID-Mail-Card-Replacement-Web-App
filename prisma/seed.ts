@@ -63,7 +63,7 @@ async function main() {
     }
 
     // Create or update a default admin user
-    const defaultAdminPassword = "Admin123"; // Default password for the admin
+    const defaultAdminPassword = "Admin@123"; // Default password for the admin
     const hashedPassword = await argon2.hash(defaultAdminPassword);
     await prisma.user.upsert({
       where: { Email: "adminjju@gmail.com" }, // Unique field to identify the user

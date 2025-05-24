@@ -10,8 +10,6 @@ async function getCurrentUser() {
   const cookieStore = cookies();
   const token = (await cookieStore).get("token")?.value; // Removed unnecessary await
 
-  console.log("Token from cookies on server:", token);
-
   if (!token) {
     console.log("No token found in cookies, redirecting to sign-in");
     redirect("/sign-in");
@@ -22,9 +20,6 @@ async function getCurrentUser() {
     const secret = new TextEncoder().encode(JWT_SECRET);
     const { payload } = await jwtVerify(token, secret, { clockTolerance: 15 });
     const userId = (payload as JWTPayload & { Id: string }).Id;
-
-    console.log("Payload from token:", payload);
-
     if (!userId) {
       console.log("User ID not found in token payload");
       redirect("/sign-in");
@@ -43,8 +38,6 @@ async function getCurrentUser() {
       redirect("/sign-in");
       return null;
     }
-
-    console.log("User data retrieved:", JSON.stringify(user));
     return user;
   } catch (error) {
     console.error("Error verifying token or fetching user:", error);
@@ -57,8 +50,6 @@ async function getCurrentUser() {
 
 export default async function IdandMailCardReplacement() {
   const user = await getCurrentUser();
-  console.log("User passed to form:", user);
-
   if (!user) {
     return null;
   }

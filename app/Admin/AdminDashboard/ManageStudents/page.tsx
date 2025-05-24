@@ -38,7 +38,7 @@ const ManageStudents = () => {
 
   if (isLoading) {
     return (
-      <div className="h-screen flex justify-center items-center text-lg text-gray-600">
+      <div className="h-screen flex justify-center items-center text-lg text-gray-600 dark:text-white">
         Loading students...
       </div>
     );
@@ -70,8 +70,9 @@ const ManageStudents = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-green-300 shadow-md">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        <Card className="border-green-300 shadow-md h-48 w-full max-w-md mx-auto">
           <CardHeader className="text-green-600 text-xl font-semibold">
             Total Students
           </CardHeader>
@@ -80,16 +81,7 @@ const ManageStudents = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-yellow-300 shadow-md h-48">
-          <CardHeader className="text-red-600 text-xl font-semibold">
-            Deleted Students
-          </CardHeader>
-          <CardContent className="text-3xl font-bold text-yellow-500">
-            {totalDeleted}
-          </CardContent>
-        </Card>
-
-        <Card className="border-red-300 shadow-md">
+        <Card className="border-red-500 shadow-md h-48 w-full max-w-md mx-auto">
           <CardHeader className="text-yellow-600 text-xl font-semibold">
             Blocked Students
           </CardHeader>

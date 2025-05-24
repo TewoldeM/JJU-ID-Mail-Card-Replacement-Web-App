@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { PrismaClient } from "@prisma/client";
 import { jwtVerify, JWTPayload } from "jose";
-import StudentDashboard from "@/components/collection/TestedUi/studentUI";
+import StudentDashboard from "@/components/collection/StudentDashboard";
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "A5xj97s5GiJHD0518ZI02XjZPQU328";
