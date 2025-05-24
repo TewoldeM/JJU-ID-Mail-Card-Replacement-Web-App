@@ -1,6 +1,6 @@
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("POSTGRES_PRISMA_URL") // Use the connection string from environment variables
   directUrl = env("POSTGRES_URL_NON_POOLING") // For direct access without connection pooling
 }
 
