@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
 import { Loader2, Mail, Phone, Lock, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -85,7 +84,7 @@ export default function ProfileForm({
         throw new Error(data.error || "Profile update failed");
       }
 
-      const data = await response.json();
+       await response.json();
       toast.success("Profile updated successfully");
 
       setFormData((prev) => ({
@@ -97,8 +96,9 @@ export default function ProfileForm({
       if (formData.Email !== user.Email) {
         router.push("/sign-in");
       }
-    } catch (error: any) {
+    } catch (errors) {
       toast.error("Something went wrong");
+      console.log(errors);
     } finally {
       setLoading(false);
     }
@@ -137,8 +137,8 @@ export default function ProfileForm({
 
       setFile(null);
       await fetchProfilePicture();
-    } catch (error: any) {
-      console.error("Upload error:", error);
+    } catch (errors) {
+      console.error("Upload error:", errors);
       toast.error("field to upload profile picture");
     } finally {
       setUploading(false);

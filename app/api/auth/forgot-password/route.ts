@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
       { message: "If the email exists, a reset link has been sent." },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error("❗ Forgot password error:", error);
     return NextResponse.json(
       { error: "Internal server error" },

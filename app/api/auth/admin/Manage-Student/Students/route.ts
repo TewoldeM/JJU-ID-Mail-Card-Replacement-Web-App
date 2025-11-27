@@ -36,10 +36,10 @@ export async function GET() {
       { students, totalStudents, totalBlocked, totalDeleted },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error fetching students:", error);
     return NextResponse.json(
-      { message: "Internal server error", error: error.message },
+      { message: "Internal server error"},
       { status: 500 }
     );
   }
@@ -72,10 +72,10 @@ export async function DELETE(request: Request) {
       { message: "Student deleted successfully" },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error deleting student:", error);
     return NextResponse.json(
-      { message: "Internal server error", error: error.message },
+      { message: "Internal server error"},
       { status: 500 }
     );
   }
@@ -107,10 +107,10 @@ export async function PATCH(request: Request) {
     return NextResponse.json({
       message: `Student ${IsBlocked ? "blocked" : "unblocked"} successfully`,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error blocking/unblocking student:", error);
     return NextResponse.json(
-      { message: "Internal server error", error: error.message },
+      { message: "Internal server error"},
       { status: 500 }
     );
   }

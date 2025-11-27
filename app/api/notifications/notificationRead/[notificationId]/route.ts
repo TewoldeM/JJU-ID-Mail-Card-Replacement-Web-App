@@ -1,53 +1,58 @@
-import { PrismaClient } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
 import { jwtVerify } from "jose";
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || "A5xj97s5GiJHD0518ZI02XjZPQU328";
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"; // Replace with your actual secret
 
-export async function PUT( req: NextRequest,{ params }: { params: { notificationId: string } }
-) {
-  const { notificationId } = params;
-const token = req.cookies.get("token")?.value;
-if (!token) {
-  console.log("No token found in cookie");
-  return NextResponse.json(
-    { error: "Unauthorized: No token found" },
-    { status: 401 }
-  );
-} try {
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }){
+  try {
+    // Get the JWT token from the cookie
+    const token = req.cookies.get("token")?.value;
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized: No token" }, { status: 401 });
+    }
+
+    // Verify the token
     const secret = new TextEncoder().encode(JWT_SECRET);
     const { payload } = await jwtVerify(token, secret);
-    const userId = (payload as any).Id;
+    const userId = payload.id as string;
 
-    const user = await prisma.user.findUnique({ where: { Id: userId } });
+    // Find the user to get their StudentId
+    const user = await prisma.user.findUnique({
+      where: { Id: userId },
+      select: { StudentId: true },
+    });
+
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const notification = await prisma.notification.findUnique({
-      where: { id: notificationId },
+    const { id } = params; // Get notificationId from URL
+    // Find the notification
+    const notification = await prisma.notification.findFirst({
+      where: { id, StudentId: user.StudentId },
     });
-    if (!notification || notification.StudentId !== user.StudentId) {
+
+    if (!notification) {
       return NextResponse.json(
-        { error: "Forbidden: Notification not yours" },
-        { status: 403 }
+        { error: "Notification not found or not authorized" },
+        { status: 404 }
       );
     }
 
+    // Update the notification to mark as read
     const updatedNotification = await prisma.notification.update({
-      where: { id: notificationId },
+      where: { id },
       data: { read: true },
     });
+
+    return NextResponse.json(updatedNotification, { status: 200 });
+  } catch (error) {
+    console.error("Error in PUT /api/notifications/[id]:", error);
     return NextResponse.json(
-      { message: "Notification marked as read" },
-      { status: 200 }
-    );
-  } catch (error: any) {
-    console.error("Error in PUT /api/notifications:", error);
-    return NextResponse.json(
-      { error: "Failed to update notification" },
-      { status: 500 }
+      { error: "Internal server error" },
+      ( { status: 500 })
     );
   } finally {
     await prisma.$disconnect();

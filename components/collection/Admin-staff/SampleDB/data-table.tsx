@@ -22,7 +22,10 @@ import React from "react";
 import { download, generateCsv, mkConfig } from "export-to-csv";
 import { DownloadIcon } from "lucide-react";
 
-interface DataTableProps<TData, TValue> {
+interface DataTableProps<
+  TData extends Record<string, string | number | null | undefined>,
+  TValue,
+> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
 }
@@ -35,10 +38,10 @@ const csvConfig = mkConfig({
   filename: "table_data_export",
 });
 
-export function DataTable<TData, TValue>({
-  columns,
-  data,
-}: DataTableProps<TData, TValue>) {
+export function DataTable<
+  TData extends Record<string, string | number | null | undefined>,
+  TValue,
+>({ columns, data }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const table = useReactTable({
@@ -52,7 +55,7 @@ export function DataTable<TData, TValue>({
   });
 
   // Function to handle CSV export
-  const handleExportCSV = (data: any[]) => {
+  const handleExportCSV = (data: TData[]) => {
     if (!data || data.length === 0) return; // Guard against empty data
     const csv = generateCsv(csvConfig)(data);
     download(csvConfig)(csv);

@@ -24,7 +24,7 @@ interface FooterProps {
 }
 
 const Footer: React.FC<FooterProps> = ({ userRole }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const {loading } = useAuth();
   const quickLinks = userRole === "ADMIN" ? adminItems : studentItems;
 
   // Prevent rendering until auth state is resolved

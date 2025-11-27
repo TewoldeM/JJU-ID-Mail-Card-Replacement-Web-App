@@ -2,18 +2,11 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ApplicationType } from "@prisma/client";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, Eye } from "lucide-react";
+import { ArrowUpDown, Eye } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useCallback } from "react";
 
 // Renamed to avoid confusion with the Prisma model
 export type ApplicationData = {
@@ -32,6 +25,21 @@ export type ApplicationData = {
   photo: string | null; // Base64-encoded photo data or null
 };
 
+// Component for the application detail cell
+const ApplicationDetailCell: React.FC<{ id: string }> = ({ id }) => {
+  const router = useRouter();
+
+  const handleClick = useCallback(() => {
+    router.push(`/Admin/ApplicationDetailfortheadmin/${id}`);
+  }, [router, id]);
+
+  return (
+    <Button variant="outline" size="sm" className="ml-8" onClick={handleClick}>
+      <Eye className="h-4 w-4 mr-2" /> View
+    </Button>
+  );
+};
+
 export const columns: ColumnDef<ApplicationData>[] = [
   {
     accessorKey: "StudentId",
@@ -47,8 +55,8 @@ export const columns: ColumnDef<ApplicationData>[] = [
       );
     },
     cell: ({ row }) => {
-      const studentId = row.getValue("StudentId") as string;
-      return studentId.padStart(4, "0"); // Ensure 4-digit display with leading zeros
+      const StudentId = row.getValue("StudentId") as string;
+      return StudentId.padStart(4, "0"); // Ensure 4-digit display with leading zeros
     },
   },
   {
@@ -183,10 +191,12 @@ export const columns: ColumnDef<ApplicationData>[] = [
     cell: ({ row }) => {
       const photo = row.getValue("photo") as string | null;
       return photo ? (
-        <img
+        <Image
           src={photo}
           alt="Student submitted photo"
           className="h-12 w-12 object-cover rounded"
+          width={48}
+          height={48}
         />
       ) : (
         <span>No photo</span>
@@ -195,7 +205,7 @@ export const columns: ColumnDef<ApplicationData>[] = [
   },
   {
     accessorKey: "applicationDetail",
-    header: ({ column }) => {
+    header: () => {
       return (
         <Button variant="ghost">
           Application Detail
@@ -204,20 +214,8 @@ export const columns: ColumnDef<ApplicationData>[] = [
       );
     },
     cell: ({ row }) => {
-      const router = useRouter();
       const id = row.original.id; // Use the application ID for the detail link
-      return (
-        <Button
-          variant="outline"
-          size="sm"
-          className="ml-8"
-          onClick={() =>
-            router.push(`/Admin/ApplicationDetailfortheadmin/${id}`)
-          } // Dynamic route with id
-        >
-          <Eye className="h-4 w-4 mr-2" /> View
-        </Button>
-      );
+      return <ApplicationDetailCell id={id} />;
     },
   },
 ];

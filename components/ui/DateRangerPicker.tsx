@@ -1,7 +1,13 @@
 /* eslint-disable max-lines */
 "use client";
 
-import React, { type FC, useState, useEffect, useRef } from "react";
+import React, {
+  type FC,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -9,7 +15,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-
 import { Label } from "@/components/ui/label";
 import {
   ChevronUpIcon,
@@ -18,7 +23,13 @@ import {
 } from "@radix-ui/react-icons";
 import { cn } from "@/lib/utils";
 import { DateInput } from "../collection/date-input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./select";
 import { Switch } from "./switch";
 
 export interface DateRangePickerProps {
@@ -39,24 +50,6 @@ export interface DateRangePickerProps {
   /** Option for showing compare feature */
   showCompare?: boolean;
 }
-
-const formatDate = (date: Date, locale: string = "en-us"): string => {
-  return date.toLocaleDateString(locale, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-};
-
-const getDateAdjustedForTimezone = (dateInput: Date | string): Date => {
-  if (typeof dateInput === "string") {
-    const parts = dateInput.split("-").map((part) => parseInt(part, 10));
-    const date = new Date(parts[0], parts[1] - 1, parts[2]);
-    return date;
-  } else {
-    return dateInput;
-  }
-};
 
 interface DateRange {
   from: Date;
@@ -79,6 +72,24 @@ const PRESETS: Preset[] = [
   { name: "thisMonth", label: "This Month" },
   { name: "lastMonth", label: "Last Month" },
 ];
+
+const formatDate = (date: Date, locale: string = "en-us"): string => {
+  return date.toLocaleDateString(locale, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const getDateAdjustedForTimezone = (dateInput: Date | string): Date => {
+  if (typeof dateInput === "string") {
+    const parts = dateInput.split("-").map((part) => parseInt(part, 10));
+    const date = new Date(parts[0], parts[1] - 1, parts[2]);
+    return date;
+  } else {
+    return dateInput;
+  }
+};
 
 export const DateRangePicker: FC<DateRangePickerProps> & {
   filePath: string;
@@ -217,7 +228,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
     }
   };
 
-  const checkPreset = (): void => {
+  const checkPreset = useCallback((): void => {
     for (const preset of PRESETS) {
       const presetRange = getPresetRange(preset.name);
 
@@ -243,7 +254,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
     }
 
     setSelectedPreset(undefined);
-  };
+  }, [range.from, range.to, setSelectedPreset]);
 
   const resetValues = (): void => {
     setRange({
@@ -256,8 +267,8 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
           ? getDateAdjustedForTimezone(initialDateTo)
           : initialDateTo
         : typeof initialDateFrom === "string"
-        ? getDateAdjustedForTimezone(initialDateFrom)
-        : initialDateFrom,
+          ? getDateAdjustedForTimezone(initialDateFrom)
+          : initialDateFrom,
     });
     setRangeCompare(
       initialCompareFrom
@@ -271,8 +282,8 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
                 ? getDateAdjustedForTimezone(initialCompareTo)
                 : initialCompareTo
               : typeof initialCompareFrom === "string"
-              ? getDateAdjustedForTimezone(initialCompareFrom)
-              : initialCompareFrom,
+                ? getDateAdjustedForTimezone(initialCompareFrom)
+                : initialCompareFrom,
           }
         : undefined
     );
@@ -280,7 +291,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
 
   useEffect(() => {
     checkPreset();
-  }, [range]);
+  }, [range.from, range.to, checkPreset]);
 
   const PresetButton = ({
     preset,
@@ -320,7 +331,8 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
       openedRangeRef.current = range;
       openedRangeCompareRef.current = rangeCompare;
     }
-  }, [isOpen]);
+  }, [isOpen, range, rangeCompare]);
+
 
   return (
     <Popover

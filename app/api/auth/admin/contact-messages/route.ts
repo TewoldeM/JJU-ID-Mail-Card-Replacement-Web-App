@@ -74,16 +74,10 @@ export async function GET(req: NextRequest) {
       limit,
       totalPages,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in /api/auth/admin/contact-messages:", error);
-    if (error.code === "ERR_JWT_EXPIRED" || error.code === "ERR_JWS_INVALID") {
-      return NextResponse.json(
-        { error: "Unauthorized: Invalid or expired token" },
-        { status: 401 }
-      );
-    }
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 }
     );
   } finally {

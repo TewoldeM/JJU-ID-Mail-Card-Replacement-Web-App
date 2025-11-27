@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Tiptap from "../../ReusableComponets/Tiptap";
-import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
 interface UserData {
@@ -70,7 +69,7 @@ const UserInfoTable: React.FC<UserInfoTableProps> = ({
       } else {
         throw new Error("Failed to accept application");
       }
-    } catch (error) {
+    } catch{
       toast.error("Failed to accept application. Please try again.");
     }
   };
@@ -102,7 +101,7 @@ const UserInfoTable: React.FC<UserInfoTableProps> = ({
       } else {
         throw new Error("Failed to reject application");
       }
-    } catch (error) {
+    } catch{
       toast.error("Failed to reject application. Please try again.");
     }
   };

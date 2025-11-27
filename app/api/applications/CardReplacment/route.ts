@@ -1,8 +1,9 @@
+
+//allow 5 per month for ID_CARD_REPLACEMENT and MAIL_CARD_REPLACEMENT
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, ApplicationType, FileCategory } from "@prisma/client";
 import { jwtVerify, JWTPayload } from "jose";
 import { randomBytes } from "crypto";
-
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "A5xj97s5GiJHD0518ZI02XjZPQU328";
 
@@ -21,9 +22,9 @@ export async function POST(req: NextRequest) {
     try {
       const result = await jwtVerify(token, secret, { clockTolerance: 15 });
       payload = result.payload;
-    } catch (jwtError: any) {
+    } catch (errors) {
       return NextResponse.json(
-        { error: "Invalid or expired token" },
+        { error: "Invalid or expired token",errors},
         { status: 401 }
       );
     }
@@ -48,7 +49,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let { Reason, applicationType, Collage, Department, Program, file } = body;
+    let {Collage, Department, Program,} = body;
+    const { Reason,applicationType,file } = body;
     if (!Reason || !applicationType || !file) {
       return NextResponse.json(
         { error: "Reason, application type, and file are required" },
@@ -56,7 +58,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if ( !file.fileName ||!file.fileType || !file.fileSize || !file.fileData ||!file.fileType.startsWith("image/")) {
+    if (
+      !file.fileName ||
+      !file.fileType ||
+      !file.fileSize ||
+      !file.fileData ||
+      !file.fileType.startsWith("image/")
+    ) {
       return NextResponse.json(
         {
           error:
@@ -72,9 +80,9 @@ export async function POST(req: NextRequest) {
       if (!user) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
-    } catch (userError) {
+    } catch (errors) {
       return NextResponse.json(
-        { error: "Failed to fetch user" },
+        { error: "Failed to fetch user", errors },
         { status: 500 }
       );
     }
@@ -93,13 +101,13 @@ export async function POST(req: NextRequest) {
       });
       if (!validStudent) {
         return NextResponse.json(
-          { error: "You are not a valid student at JJU. Access denied." },
+          { error: "Your data was not found in the JJU student list." },
           { status: 403 }
         );
       }
-    } catch (studentError) {
+    } catch (errors) {
       return NextResponse.json(
-        { error: "Failed to validate student" },
+        { error: "Failed to validate student", errors },
         { status: 500 }
       );
     }
@@ -107,7 +115,6 @@ export async function POST(req: NextRequest) {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
-    const currentDay = now.getDate();
 
     let existingIdApplications, existingMailApplications;
     try {
@@ -131,24 +138,24 @@ export async function POST(req: NextRequest) {
           },
         },
       });
-    } catch (countError) {
+    } catch (errors) {
       return NextResponse.json(
-        { error: "Failed to check application limits" },
+        { error: "Failed to check application limits", errors },
         { status: 500 }
       );
     }
 
     if (
       (applicationType === "ID_CARD_REPLACEMENT" &&
-        existingIdApplications > 0) ||
+        existingIdApplications >= 5) ||
       (applicationType === "MAIL_CARD_REPLACEMENT" &&
-        existingMailApplications > 0)
+        existingMailApplications >= 5)
     ) {
       return NextResponse.json(
         {
-          error: `You can only submit one ${applicationType
+          error: `You can only submit up to 5 ${applicationType
             .replace("_", " ")
-            .toLowerCase()} application per month.`,
+            .toLowerCase()} applications per month.`,
         },
         { status: 403 }
       );
@@ -160,9 +167,9 @@ export async function POST(req: NextRequest) {
         (await prisma.application.count({
           where: { StudentId: user.StudentId },
         })) > 0;
-    } catch (prevAppsError) {
+    } catch (errors) {
       return NextResponse.json(
-        { error: "Failed to check previous applications" },
+        { error: "Failed to check previous applications", errors },
         { status: 500 }
       );
     }
@@ -192,47 +199,124 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const verificationToken = randomBytes(16).toString("hex");
+    const verificationToken = randomBytes(8).toString("hex");
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Create PendingApplication and Application in a transaction
-    const [pendingApplication, application] = await prisma.$transaction([
-      prisma.pendingApplication.create({
-        data: {
-          StudentId: user.StudentId,
-          applicationType: applicationType as ApplicationType,
-          reason: Reason,
-          Collage,
-          Department,
-          Program,
-          verificationToken,
-          expiresAt,
-        },
-      }),
+    const pendingApplication = await prisma.pendingApplication.create({
+      data: {
+        StudentId: user.StudentId,
+        applicationType: applicationType as ApplicationType,
+        reason: Reason,
+        Collage,
+        Department,
+        Program,
+        verificationToken,
+        expiresAt,
+        fileName: file.fileName,
+        fileType: file.fileType,
+        fileSize: file.fileSize,
+        fileData: file.fileData,
+      },
+    });
+
+    const verificationLink = `${process.env.NEXT_PUBLIC_URL}/api/applications/verify?token=${verificationToken}`;
+    const emailResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_URL}/api/mail`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user.Email,
+          FirstName: user.FirstName,
+          verificationLink,
+        }),
+      }
+    );
+
+    if (!emailResponse.ok) {
+      const errorText = await emailResponse.text();
+      return NextResponse.json(
+        { error: "Failed to send verification email", details: errorText },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        message: "Verification email sent",
+        pendingApplicationId: pendingApplication.id,
+      },
+      { status: 202 }
+    );
+  } catch (errors) {
+    return NextResponse.json(
+      {
+        error: "Internal server error",errors
+       
+      },
+      { status: 500 }
+    );
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+export async function GET(req: NextRequest) {
+  const token = req.nextUrl.searchParams.get("token");
+  if (!token) {
+    return NextResponse.json(
+      { error: "Verification token is required" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const pendingApplication = await prisma.pendingApplication.findFirst({
+      where: { verificationToken: token },
+    });
+
+    if (!pendingApplication) {
+      return NextResponse.json(
+        { error: "Invalid or expired verification token" },
+        { status: 400 }
+      );
+    }
+
+    if (pendingApplication.expiresAt < new Date()) {
+      await prisma.pendingApplication.delete({
+        where: { id: pendingApplication.id },
+      });
+      return NextResponse.json(
+        { error: "Verification token has expired" },
+        { status: 400 }
+      );
+    }
+
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const currentDay = now.getDate();
+
+    const [application, fileRecord] = await prisma.$transaction([
       prisma.application.create({
         data: {
-          StudentId: user.StudentId,
-          applicationType: applicationType as ApplicationType,
+          StudentId: pendingApplication.StudentId,
+          applicationType: pendingApplication.applicationType,
           status: "PENDING",
-          reason: Reason,
-          Collage,
-          Department,
-          Program,
+          reason: pendingApplication.reason,
+          Collage: pendingApplication.Collage,
+          Department: pendingApplication.Department,
+          Program: pendingApplication.Program,
         },
       }),
-    ]);
-
-    // Create File and update histories in a transaction
-    const [fileRecord] = await prisma.$transaction([
       prisma.file.create({
         data: {
-          fileName: file.fileName,
-          fileType: file.fileType,
-          fileSize: file.fileSize,
-          fileData: file.fileData,
+          fileName: pendingApplication.fileName!,
+          fileType: pendingApplication.fileType!,
+          fileSize: pendingApplication.fileSize!,
+          fileData: pendingApplication.fileData!,
           fileCategory: FileCategory.PHOTOGRAPH,
-          applicationId: application.id,
-          pendingApplicationId: pendingApplication.id,
+          applicationId: undefined,
         },
       }),
       prisma.monthlyHistory.upsert({
@@ -281,41 +365,29 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
-    const verificationLink = `${process.env.NEXT_PUBLIC_URL}/applications/Verify-application?token=${verificationToken}`;
-    const emailResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_URL}/api/mail`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: validStudent.Email,
-          FirstName: validStudent.FirstName,
-          verificationLink,
-        }),
-      }
-    );
+    await prisma.file.update({
+      where: { id: fileRecord.id },
+      data: { applicationId: application.id },
+    });
 
-    if (!emailResponse.ok) {
-      const errorText = await emailResponse.text();
-      return NextResponse.json(
-        { error: "Failed to send verification email", details: errorText },
-        { status: 500 }
-      );
-    }
+    const hasPreviousApplications =
+      (await prisma.application.count({
+        where: { StudentId: pendingApplication.StudentId },
+      })) > 0;
 
     if (!hasPreviousApplications) {
       try {
         await prisma.user.update({
-          where: { Id: userId },
+          where: { StudentId: pendingApplication.StudentId },
           data: {
-            Collage,
-            Department,
-            Program,
+            Collage: pendingApplication.Collage,
+            Department: pendingApplication.Department,
+            Program: pendingApplication.Program,
           },
         });
-      } catch (updateError) {
+      } catch (errors) {
         return NextResponse.json(
-          { error: "Failed to update user data" },
+          { error: "Failed to update user data", errors },
           { status: 500 }
         );
       }
@@ -324,37 +396,41 @@ export async function POST(req: NextRequest) {
     try {
       await prisma.notification.create({
         data: {
-          StudentId: user.StudentId,
-          message: `Your ${applicationType
+          StudentId: pendingApplication.StudentId,
+          message: `Your ${pendingApplication.applicationType
             .replace("_", " ")
-            .toLowerCase()} application has been submitted successfully. Please check your email to verify.`,
+            .toLowerCase()} application has been submitted successfully.`,
           link: `/applicationsDetail/${application.id}/Detail`,
           read: false,
         },
       });
-    } catch (notifyError: any) {
+    } catch (errors) {
       return NextResponse.json(
         {
           error: "Failed to create notification",
-          details: notifyError.message || "Unknown error",
+          errors,
         },
         { status: 500 }
       );
     }
 
+    await prisma.pendingApplication.delete({
+      where: { id: pendingApplication.id },
+    });
+
     return NextResponse.json(
       {
-        message: "Application submitted, verification email sent",
+        message: "Application verified and submitted successfully",
         id: application.id,
         fileId: fileRecord.id,
       },
-      { status: 202 }
+      { status: 200 }
     );
-  } catch (error: any) {
+  } catch{
     return NextResponse.json(
       {
-        error: "Internal server error",
-        details: error.message || "Unknown error",
+        error: "Internal server error during verification",
+        details:"Unknown error(verification Error message)",
       },
       { status: 500 }
     );

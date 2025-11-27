@@ -1,7 +1,6 @@
 "use client";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -17,72 +16,83 @@ export default function SignUpForm() {
   const [PhoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState("");
   const [isError, setIsError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setIsError(false);
 
     try {
       const cleanedStudentId = StudentId.replace(/\D+/g, "");
+      const cleanedYear = Year.replace(/\D+/g, "");
+      const cleanedPhoneNumber = PhoneNumber.replace(/\D+/g, "");
+
       // Input validation
-      if (cleanedStudentId.length < 4 || cleanedStudentId.length > 5) {
-        setError("Student ID must be 4-5 digits long");
+      if (
+        !FirstName ||
+        !LastName ||
+        !Password ||
+        !cleanedStudentId ||
+        !Email ||
+        !cleanedYear
+      ) {
+        setError("Please fill in all required fields");
         setIsError(true);
         return;
       }
 
-      if (Year.length !== 2) {
-        setError("Year must be 2 digits long");
+      if (cleanedStudentId.length !== 4) {
+        setError("Student ID must be exactly 4 digits");
         setIsError(true);
         return;
       }
 
-      if (!/^\d+$/.test(cleanedStudentId)) {
-        setError("Student ID must be numeric");
+      if (cleanedYear.length !== 2) {
+        setError("Year must be exactly 2 digits");
         setIsError(true);
         return;
       }
 
-      if (!/^\d+$/.test(Year)) {
-        setError("Year must be numeric");
+      if (cleanedPhoneNumber && cleanedPhoneNumber.length !== 10) {
+        setError("Phone number must be 10 digits if provided");
         setIsError(true);
         return;
       }
 
-      if (PhoneNumber && !/^\d{10}$/.test(PhoneNumber)) {
-        setError("Phone number must be 10 digits");
-        setIsError(true);
-        return;
-      }
-
-      const response = await axios.post("/api/auth/signup", {
-        FirstName,
-        LastName,
-        StudentId: cleanedStudentId,
-        Password,
-        Email,
-        Year,
-        PhoneNumber,
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          FirstName,
+          LastName,
+          StudentId: cleanedStudentId,
+          Password,
+          Email,
+          Year: cleanedYear,
+          PhoneNumber: cleanedPhoneNumber || undefined, // Send undefined if empty
+        }),
       });
 
+      const data = await response.json();
       if (response.status === 200) {
-        const { token, refreshToken } = response.data;
-        if (token && refreshToken) {
-          login(token, refreshToken);
-          router.push("/StudentDashboard");
-        } else {
-          setError("Failed to retrieve tokens from the server.");
+        if (!data.token || !data.refreshToken) {
+          setError("Registration failed: Missing tokens");
           setIsError(true);
+          return;
         }
-      }
-    } catch (error: any) {
-      setIsError(true);
-      if (error.response?.status === 400) {
-        setError("Student ID, Email, or phone number already exists");
+
+        login(data.token, data.refreshToken, data.user);
+        router.push("/StudentDashboard");
       } else {
-        setError("An unexpected error occurred during signup.");
-        console.error("Signup error:", error.response?.data);
+        setError(data.error || "Registration failed");
+        setIsError(true);
       }
+    } catch{
+      setIsError(true);
+      setError(error.message || "An unexpected error occurred during signup");
+      console.error("Signup error:", error);
     }
   };
 
@@ -107,7 +117,7 @@ export default function SignUpForm() {
               onChange={(e) => setFirstName(e.target.value)}
               placeholder="First Name"
               required
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-200 leading-tight focus:outline-none focus:shadow-outline"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-600 leading-tight focus:outline-none focus:shadow-outline"
             />
           </div>
           <div className="flex flex-col">
@@ -123,7 +133,7 @@ export default function SignUpForm() {
               onChange={(e) => setLastName(e.target.value)}
               placeholder="Last Name"
               required
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-400 leading-tight focus:outline-none focus:shadow-outline"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-600 leading-tight focus:outline-none focus:shadow-outline"
             />
           </div>
         </div>
@@ -141,9 +151,9 @@ export default function SignUpForm() {
               type="text"
               value={StudentId}
               onChange={(e) => setStudentId(e.target.value)}
-              placeholder="R/3578/15"
+              placeholder="6512"
               required
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-400 leading-tight focus:outline-none focus:shadow-outline"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-600 leading-tight focus:outline-none focus:shadow-outline"
             />
           </div>
           <div className="flex flex-col">
@@ -157,9 +167,9 @@ export default function SignUpForm() {
               type="text"
               value={Year}
               onChange={(e) => setYear(e.target.value)}
-              placeholder="Year"
+              placeholder="13"
               required
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-400 leading-tight focus:outline-none focus:shadow-outline"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-600 leading-tight focus:outline-none focus:shadow-outline"
             />
           </div>
         </div>
@@ -177,7 +187,7 @@ export default function SignUpForm() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
           required
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-400 leading-tight focus:outline-none focus:shadow-outline"
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-600 leading-tight focus:outline-none focus:shadow-outline"
         />
       </div>
       <div className="mb-4">
@@ -191,8 +201,8 @@ export default function SignUpForm() {
           type="tel"
           value={PhoneNumber}
           onChange={(e) => setPhoneNumber(e.target.value)}
-          placeholder="1234567890"
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-400 leading-tight focus:outline-none focus:shadow-outline"
+          placeholder="0912324567"
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-600 leading-tight focus:outline-none focus:shadow-outline"
         />
       </div>
       <div className="mb-4">
@@ -202,14 +212,60 @@ export default function SignUpForm() {
         >
           Password
         </label>
-        <input
-          type="password"
-          value={Password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          required
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-400 leading-tight focus:outline-none focus:shadow-outline"
-        />
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            value={Password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-600 leading-tight focus:outline-none focus:shadow-outline pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? (
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
       <div className="flex justify-between">
         <Button
@@ -229,7 +285,7 @@ export default function SignUpForm() {
           Sign In
         </Button>
       </div>
-      {error && <p className="text-red-500 mt-4">{error}</p>}
+      {isError && <p className="text-red-500 mt-4">{error}</p>}
     </form>
   );
 }

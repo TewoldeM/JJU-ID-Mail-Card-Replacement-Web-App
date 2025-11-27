@@ -1,14 +1,11 @@
 datasource db {
   provider = "postgresql"
-  url      = env("POSTGRES_PRISMA_URL") // Use the connection string from environment variables
-  directUrl = env("POSTGRES_URL_NON_POOLING") // For direct access without connection pooling
+  url      = env("DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
 }
-
-
 
 model User {
   Id                   String         @id @default(uuid())
@@ -130,6 +127,10 @@ model PendingApplication {
   verificationToken String          @unique
   expiresAt         DateTime
   createdAt         DateTime        @default(now())
+  fileName          String?
+  fileType          String?
+  fileSize          Int?
+  fileData          String?
   files             File[]          @relation(name: "PendingApplicationAttachment")
 
   @@index([StudentId])
@@ -190,6 +191,7 @@ model ValidStudent {
 
   @@index([StudentId, Email])
 }
+
 model ContactMessage {
   id        String   @id @default(cuid())
   name      String
@@ -201,6 +203,7 @@ model ContactMessage {
 
   @@index([createdAt])
 }
+
 enum CardType {
   ID_CARD
   MAIL_CARD

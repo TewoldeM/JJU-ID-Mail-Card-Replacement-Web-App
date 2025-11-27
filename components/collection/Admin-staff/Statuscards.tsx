@@ -5,8 +5,6 @@ import { Card } from "@/components/ui/card";
 import { LoaderPinwheel, CheckCircle, XCircle } from "lucide-react";
 import React from "react";
 import CountUp from "react-countup";
-import SkeletonWrapper from "../SkeletonWrapper";
-
 interface Counts {
   pending: number;
   accepted: number;

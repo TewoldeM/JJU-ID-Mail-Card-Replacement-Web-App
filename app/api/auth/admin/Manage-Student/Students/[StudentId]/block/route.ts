@@ -1,4 +1,4 @@
-import { NextResponse, NextRequest } from 'next/server';
+import { NextResponse} from 'next/server';
 
 
 export async function POST(request: Request) {
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       }
     })
     return NextResponse.json({ message: IsBlocked ? "User blocked successfully" : "User unblocked successfully" });
-  } catch (error:any) {
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+  } catch{
+    return NextResponse.json({ error:"Internal server error" }, { status: 500 });
   }
 }

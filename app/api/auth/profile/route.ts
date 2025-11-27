@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { jwtVerify, JWTPayload } from "jose";
+import { hash } from "argon2"; // Import argon2 using ES Module syntax
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "A5xj97s5GiJHD0518ZI02XjZPQU328";
@@ -21,9 +22,13 @@ export async function PUT(req: NextRequest) {
     }
 
     const { Email, PhoneNumber, Password } = await req.json();
-    const updateData: any = { Email, PhoneNumber };
+    const updateData: {
+      Email?: string;
+      PhoneNumber?: string;
+      Password?: string;
+    } = { Email, PhoneNumber };
     if (Password) {
-      updateData.Password = await require("argon2").hash(Password);
+      updateData.Password = await hash(Password); // Use the imported hash function
     }
 
     const user = await prisma.user.update({
@@ -35,10 +40,10 @@ export async function PUT(req: NextRequest) {
       { message: "Profile updated successfully", user },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error("Profile update error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error" },
       { status: 500 }
     );
   } finally {

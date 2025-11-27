@@ -1,35 +1,24 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 export default function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // New state for password visibility
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [formVisible, setFormVisible] = useState(true); // New state to control form visibility
   const router = useRouter();
   const { login } = useAuth();
-const [initialLoading, setInitialLoading] = useState(true);
-
-useEffect(() => {
-  const timeout = setTimeout(() => {
-    setInitialLoading(false);
-  }, 500); // Optional delay to simulate loading
-
-  return () => clearTimeout(timeout);
-}, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    setFormVisible(false); // Hide form immediately on submit
 
     try {
       const response = await fetch("/api/auth/signin", {
@@ -37,17 +26,17 @@ useEffect(() => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ Email: email, Password: password }),
       });
+
       const data = await response.json();
+
       if (response.ok) {
         if (!data.token || !data.refreshToken) {
-          console.error("Tokens missing in API response:", data);
           setError("Authentication failed: Missing tokens");
-          setFormVisible(true); // Show form again on error
           return;
         }
-        login(data.token, data.refreshToken);
-        const userData = data.user;
-        const userRoles = userData?.Roles || [];
+
+        login(data.token, data.refreshToken, data.user);
+        const userRoles = data.user?.Roles || [];
         if (Array.isArray(userRoles) && userRoles.includes("ADMIN")) {
           router.push("/Admin/AdminDashboard");
         } else {
@@ -55,100 +44,105 @@ useEffect(() => {
         }
       } else {
         setError(data.error || "Invalid Email or Password");
-        setFormVisible(true); // Show form again on error
       }
-    } catch (error) {
-      console.error("Sign-in error:", error); // Debug
+    } catch (err) {
+      console.error("Sign-in error:", err);
       setError("An unexpected error occurred. Please try again.");
-      setFormVisible(true); // Show form again on error
     } finally {
       setLoading(false);
     }
   };
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-10 w-10 animate-spin text-green-600" />
-        <span className="ml-2 text-green-700 dark:text-white text-lg font-semibold">
-          Loading page...
-        </span>
+      <div className="flex flex-col justify-center items-center h-screen bg-white dark:bg-black transition-all duration-300">
+        <Loader2 className="h-16 w-16 animate-spin text-green-600 mb-4" />
+        <p className="text-xl text-green-700 dark:text-white font-semibold animate-pulse">
+          Signing you in...
+        </p>
       </div>
     );
   }
 
-  // Show form only if formVisible is true
-  if (formVisible) {
-    return (
-      <form
-        onSubmit={handleSubmit}
-        className="py-16 px-8 md:w-96 border-2 border-green-950 mb-48"
-      >
-        <h2 className="text-3xl font-bold mb-4 dark:text-white">Sign In</h2>
-        <div className="mb-8">
-          <label
-            className="block dark:text-white text-sm font-bold mb-2"
-            htmlFor="email"
-          >
-            Email
-          </label>
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="py-16 px-8 md:w-96 border-2 border-green-950 mb-48"
+    >
+      <h2 className="text-3xl font-bold mb-4 dark:text-white">Sign In</h2>
+
+      <div className="mb-8">
+        <label
+          className="block dark:text-white text-sm font-bold mb-2"
+          htmlFor="email"
+        >
+          Email
+        </label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          required
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-green-400 leading-tight focus:outline-none focus:shadow-outline"
+        />
+      </div>
+
+      <div className="mb-8">
+        <label
+          className="block dark:text-white text-sm font-bold mb-2"
+          htmlFor="password"
+        >
+          Password
+        </label>
+        <div className="relative">
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            required
-            disabled={loading}
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-green-400 leading-tight focus:outline-none focus:shadow-outline"
-          />
-        </div>
-        <div className="mb-8">
-          <label
-            className="block dark:text-white text-sm font-bold mb-2"
-            htmlFor="password"
-          >
-            Password
-          </label>
-          <input
-            type="password"
+            type={showPassword ? "text" : "password"} // Toggle between text and password
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
             required
-            disabled={loading}
             className="shadow appearance-none border rounded w-full py-2 px-3 text-green-400 leading-tight focus:outline-none focus:shadow-outline"
           />
-        </div>
-        <div className="flex justify-between items-center">
-          <Button
-            type="submit"
-            disabled={loading}
-            className={cn(
-              "bg-green-700 hover:bg-green-800 border-green-600 hover:border-2 text-white hover:text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline border-2 shadow-md",
-              loading && "opacity-50 cursor-not-allowed"
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
+          >
+            {showPassword ? (
+              <EyeOff className="h-5 w-5 text-green-600" />
+            ) : (
+              <Eye className="h-5 w-5 text-green-600" />
             )}
-          >
-            Sign In
-          </Button>
-          <Link
-            href="/sign-up"
-            className="text-green-600 font-bold hover:text-green-700"
-          >
-            Sign Up
-          </Link>
+          </button>
         </div>
-        <div className="mt-14 text-center">
-          <Link
-            href="/forgot-password"
-            className="text-green-600 font-bold hover:text-green-700"
-          >
-            Forgot Password?
-          </Link>
-        </div>
-        {error && <p className="text-red-500 mt-4">{error}</p>}
-      </form>
-    );
-  }
+      </div>
 
-  // Return null if form is not visible and not loading (successful sign-in)
-  return null;
+      <div className="flex justify-between items-center">
+        <Button
+          type="submit"
+          className="bg-green-700 hover:bg-green-800 border-green-600 hover:border-2 text-white hover:text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline border-2 shadow-md"
+        >
+          Sign In
+        </Button>
+        <Link
+          href="/sign-up"
+          className="text-green-600 font-bold hover:text-green-700"
+        >
+          Sign Up
+        </Link>
+      </div>
+
+      <div className="mt-14 text-center">
+        <Link
+          href="/forgot-password"
+          className="text-green-600 font-bold hover:text-green-700"
+        >
+          Forgot Password?
+        </Link>
+      </div>
+
+      {error && <p className="text-red-500 mt-4">{error}</p>}
+    </form>
+  );
 }

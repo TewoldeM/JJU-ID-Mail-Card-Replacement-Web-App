@@ -1,15 +1,5 @@
 "use client";
-import { useState, Dispatch, SetStateAction, FormEvent } from "react";
-
-interface ResetPasswordFormProps {
-  password: string;
-  setPassword: Dispatch<SetStateAction<string>>;
-  confirmPassword: string;
-  setConfirmPassword: Dispatch<SetStateAction<string>>;
-  handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
-  message: string | null;
-  error: string | null;
-}
+import { useState, FormEvent, Dispatch, SetStateAction } from "react";
 
 export default function ResetPasswordForm({
   password,
@@ -19,7 +9,15 @@ export default function ResetPasswordForm({
   handleSubmit,
   message,
   error,
-}: ResetPasswordFormProps) {
+}: {
+  password: string;
+  setPassword: Dispatch<SetStateAction<string>>;
+  confirmPassword: string;
+  setConfirmPassword: Dispatch<SetStateAction<string>>;
+  handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  message: string | null;
+  error: string | null;
+}) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 

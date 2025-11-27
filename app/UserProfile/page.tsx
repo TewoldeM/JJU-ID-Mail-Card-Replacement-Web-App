@@ -1,25 +1,42 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import ProfileForm from "@/components/collection/user-profile";
+import dynamic from "next/dynamic";
 import toast from "react-hot-toast";
 
+// Lazy-load ProfileForm to reduce initial bundle size
+const ProfileForm = dynamic(
+  () => import("@/components/collection/user-profile"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex justify-center items-center text-gray-500 dark:text-gray-300">
+        <Loader2 className="animate-spin mr-2" /> Loading form...
+      </div>
+    ),
+  }
+);
+
 export default function ProfilePage() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const [initialData, setInitialData] = useState({
-    Email: "",
-    PhoneNumber: "",
+    Email: user?.Email || "",
+    PhoneNumber: user?.PhoneNumber || "",
   });
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
-  const fetchProfile = async () => {
+  // Memoize fetchProfile to prevent redefinition
+  const fetchProfile = useCallback(async () => {
     try {
       const response = await fetch("/api/auth/me", {
         credentials: "include",
+        headers: { "Cache-Control": "no-cache" }, // Prevent stale cache
       });
       if (response.ok) {
         const data = await response.json();
@@ -32,15 +49,17 @@ export default function ProfilePage() {
       }
     } catch (error) {
       console.error("Fetch profile error:", error);
-      toast.error("Failed to load profile data");
+      toast.error("Failed to load profile data", { id: "profile-error" });
       router.push("/sign-in");
     }
-  };
+  }, [router]);
 
-  const fetchProfilePicture = async () => {
+  // Memoize fetchProfilePicture to prevent redefinition
+  const fetchProfilePicture = useCallback(async () => {
     try {
       const response = await fetch("/api/auth/profile-picture", {
         credentials: "include",
+        headers: { "Cache-Control": "no-cache" },
       });
       if (response.ok) {
         const data = await response.json();
@@ -50,12 +69,20 @@ export default function ProfilePage() {
       }
     } catch (error) {
       console.error("Fetch profile picture error:", error);
+      toast.error("Failed to load profile picture", { id: "picture-error" });
     }
-  };
+  }, []);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/sign-in");
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted || loading || !isAuthenticated) {
+      if (!loading && !isAuthenticated) {
+        router.push("/sign-in");
+      }
       return;
     }
 
@@ -64,14 +91,23 @@ export default function ProfilePage() {
       try {
         await Promise.all([fetchProfile(), fetchProfilePicture()]);
       } finally {
-        setFetching(false);
+        if (isMounted) {
+          setFetching(false);
+        }
       }
     };
 
     loadData();
-  }, [isAuthenticated, router]);
+  }, [
+    isAuthenticated,
+    loading,
+    fetchProfile,
+    fetchProfilePicture,
+    isMounted,
+    router,
+  ]);
 
-  if (fetching) {
+  if (loading || fetching) {
     return (
       <div className="flex h-screen justify-center items-center text-gray-500 dark:text-gray-300">
         <Loader2 className="animate-spin mr-2" /> Loading profile...

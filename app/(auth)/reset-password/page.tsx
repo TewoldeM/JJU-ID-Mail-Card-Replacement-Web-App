@@ -18,7 +18,7 @@ export default function ResetPassword() {
     }
   }, [token]);
 
-  const handleSubmit = async (e:any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMessage("");
     setError("");

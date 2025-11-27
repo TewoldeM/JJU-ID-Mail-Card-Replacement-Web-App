@@ -1,6 +1,6 @@
 "use client";
 import "react-phone-number-input/style.css";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -95,8 +95,14 @@ const formSchema = z.object({
     .optional(),
   file: z
     .instanceof(File)
-    .refine((file) => file?.type?.startsWith("image/"), {
-      message: "File must be an image",
+    .refine(
+      (file) =>
+        file?.type?.startsWith("image/") &&
+        ["image/jpeg", "image/png", "image/gif"].includes(file.type),
+      { message: "File must be a JPEG, PNG, or GIF image" }
+    )
+    .refine((file) => file?.size <= 5 * 1024 * 1024, {
+      message: "File size must be less than 5MB",
     })
     .optional(),
 });
@@ -104,12 +110,17 @@ const formSchema = z.object({
 const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
   const router = useRouter();
   const { loading, isAuthenticated } = useAuth();
-  const [hasPreviousApplications, setHasPreviousApplications] = useState(false);
-  const [previousData, setPreviousData] = useState<{Collage: string;Department: string;Program: string; } | null>(null);
+  const [,setHasPreviousApplications] = useState(false);
+  const [previousData, setPreviousData] = useState<{
+    Collage: string;
+    Department: string;
+    Program: string;
+  } | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedCollege, setSelectedCollege] = useState<string>("");
   const [filteredDepartments, setFilteredDepartments] = useState(Departments);
+  const [isMounted, setIsMounted] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -122,9 +133,9 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
       Year: user?.Year || "",
       Reason: "",
       applicationType: undefined,
-      Collage: "",
-      Department: "",
-      Program: "",
+      Collage: user?.Collage || "",
+      Department: user?.Department || "",
+      Program: user?.Program || "",
       monthlyApplicationCounts: {
         ID_CARD_REPLACEMENT: 0,
         MAIL_CARD_REPLACEMENT: 0,
@@ -133,80 +144,97 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
     },
   });
 
-  useEffect(() => {
-    const fetchPreviousApplicationData = async () => {
-      if (!isAuthenticated || !user) return;
-      try {
-        const response = await axios.get("/api/applications/check-previous", {
-          withCredentials: true,
-        });
-        const {
-          hasPrevious,
-          collage,
-          department,
-          program,
-          monthlyApplicationCounts,
-        } = response.data;
-        setHasPreviousApplications(hasPrevious);
 
-        if (hasPrevious && collage && department && program) {
-          setPreviousData({
-            Collage: collage,
-            Department: department,
-            Program: program,
-          });
-          form.setValue("Collage", collage);
-          form.setValue("Department", department);
-          form.setValue("Program", program);
-          setSelectedCollege(collage);
-          setFilteredDepartments(
-            Departments.filter((dept) => dept.college === collage)
-          );
-        }
 
-        form.setValue("monthlyApplicationCounts", {
-          ID_CARD_REPLACEMENT:
-            monthlyApplicationCounts?.ID_CARD_REPLACEMENT || 0,
-          MAIL_CARD_REPLACEMENT:
-            monthlyApplicationCounts?.MAIL_CARD_REPLACEMENT || 0,
-        });
-      } catch (error) {
-        console.error("Error fetching previous application data:", error);
-        toast.error("Failed to fetch previous application data.");
-      }
-    };
 
-    fetchPreviousApplicationData();
-  }, [isAuthenticated, user, form]);
 
-  useEffect(() => {
-    if (selectedCollege) {
-      const filtered = Departments.filter(
-        (dept) => dept.college === selectedCollege
-      );
-      setFilteredDepartments(filtered);
-      form.setValue("Department", ""); // Reset department when college changes
-    } else {
-      setFilteredDepartments(Departments);
-    }
-  }, [selectedCollege, form]);
-
-  const convertFileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-      reader.readAsDataURL(file);
+const fetchPreviousApplicationData = useCallback(async () => {
+  if (!isAuthenticated || !user) return;
+  try {
+    const response = await axios.get("/api/applications/check-previous", {
+      withCredentials: true,
+      headers: { "Cache-Control": "no-cache" },
     });
-  };
+    const {
+      hasPrevious,
+      collage,
+      department,
+      program,
+      monthlyApplicationCounts,
+    } = response.data;
+    setHasPreviousApplications(hasPrevious);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (hasPrevious && collage && department && program) {
+      setPreviousData({
+        Collage: collage,
+        Department: department,
+        Program: program,
+      });
+      form.setValue("Collage", collage);
+      form.setValue("Department", department);
+      form.setValue("Program", program);
+      setSelectedCollege(collage);
+      setFilteredDepartments(
+        Departments.filter((dept) => dept.college === collage)
+      );
+    }
+
+    form.setValue("monthlyApplicationCounts", {
+      ID_CARD_REPLACEMENT: monthlyApplicationCounts?.ID_CARD_REPLACEMENT || 0,
+      MAIL_CARD_REPLACEMENT:
+        monthlyApplicationCounts?.MAIL_CARD_REPLACEMENT || 0,
+    });
+  } catch (error) {
+    console.error("Error fetching previous application data:", error);
+    toast.error("Failed to fetch previous application data.", {
+      id: "fetch-error",
+    });
+  }
+}, [isAuthenticated, user, form]);
+
+useEffect(() => {
+  setIsMounted(true);
+  return () => setIsMounted(false);
+}, []);
+
+useEffect(() => {
+  if (!isMounted || !isAuthenticated) return;
+  fetchPreviousApplicationData();
+}, [isAuthenticated, fetchPreviousApplicationData, isMounted]);
+
+useEffect(() => {
+  if (selectedCollege) {
+    const filtered = Departments.filter(
+      (dept) => dept.college === selectedCollege
+    );
+    setFilteredDepartments(filtered);
+    form.setValue("Department", "");
+  } else {
+    setFilteredDepartments(Departments);
+  }
+}, [selectedCollege, form]);
+
+const convertFileToBase64 = useCallback((file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+}, []);
+
+const onSubmit = useCallback(
+  async (values: z.infer<typeof formSchema>) => {
     if (loading) {
-      toast.error("Please wait, authentication is still loading.");
+      toast.error("Please wait, authentication is still loading.", {
+        id: "auth-loading",
+      });
       return;
     }
     if (!isAuthenticated) {
-      toast.error("Please sign in to submit the application.");
+      toast.error("Please sign in to submit the application.", {
+        id: "auth-error",
+      });
       router.push("/sign-in");
       return;
     }
@@ -217,31 +245,34 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
     };
     if (
       values.applicationType === "ID_CARD_REPLACEMENT" &&
-      (monthlyCounts.ID_CARD_REPLACEMENT ?? 0) > 0
+      (monthlyCounts.ID_CARD_REPLACEMENT ?? 0) >= 5
     ) {
       toast.error(
-        "You have already submitted an ID Card replacement application this month."
+        "You have reached the limit of 5 ID Card replacement applications this month.",
+        { id: "id-card-limit" }
       );
       return;
     }
     if (
       values.applicationType === "MAIL_CARD_REPLACEMENT" &&
-      (monthlyCounts.MAIL_CARD_REPLACEMENT ?? 0) > 0
+      (monthlyCounts.MAIL_CARD_REPLACEMENT ?? 0) >= 5
     ) {
       toast.error(
-        "You have already submitted a MailCard replacement application this month."
+        "You have reached the limit of 5 MailCard replacement applications this month.",
+        { id: "mail-card-limit" }
       );
       return;
     }
 
     if (!values.file) {
-      toast.error("Please upload a file to submit with your application.");
+      toast.error("Please upload a file to submit with your application.", {
+        id: "file-error",
+      });
       return;
     }
 
     try {
       setIsUploading(true);
-
       const base64Data = await convertFileToBase64(values.file);
       const fileData = {
         fileName: values.file.name,
@@ -266,7 +297,9 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
       if (response.status === 202) {
         setIsVerifying(true);
         form.setValue("file", undefined);
-        toast.success("Please check your email to verify your application.");
+        toast.success("Please check your email to verify your application.", {
+          id: "verify-success",
+        });
       } else {
         const applicationId = response.data?.id;
         if (!applicationId) {
@@ -275,24 +308,54 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
         form.setValue("file", undefined);
         router.push(`/applicationsDetail/${applicationId}/Detail`);
         toast.success(
-          `Your ${values.applicationType === "ID_CARD_REPLACEMENT" ? "ID card" : "MailCard"} replacement application was successfully submitted`
+          `Your ${
+            values.applicationType === "ID_CARD_REPLACEMENT"
+              ? "ID card"
+              : "MailCard"
+          } replacement application was successfully submitted`,
+          { id: "submit-success" }
         );
       }
-    } catch (err: any) {
-      console.error("Submission error:", err);
-      toast.error(
-        "Failed to submit application: " +
-          (err.message || err.response?.data?.error || "Unknown error")
-      );
+    } catch {
+      // Suppress console error logging for specific cases
+      const errorMessage =
+        err.response?.data?.error || err.message || "Unknown error";
+
+      if (errorMessage === "Your data was not found in the JJU student list.") {
+        toast.error("Your data was not found in the JJU student list.", {
+          id: "student-not-found",
+        });
+      } else {
+        toast.error(`Failed to submit application: ${errorMessage}`, {
+          id: "submit-error",
+        });
+      }
     } finally {
       setIsUploading(false);
     }
-  };
+  },
+  [loading, isAuthenticated, form, router, convertFileToBase64]
+);
 
-  const onSubmitError = (errors: any) => {
-    toast.error("Please fix the form errors before submitting.");
-  };
+const onSubmitError = () => {
+  toast.error("Please fix the form errors before submitting.", {
+    id: "form-error",
+  });
+};
 
+if (!isAuthenticated && !loading) {
+  router.push("/sign-in");
+  return null;
+}
+
+if (loading) {
+  return (
+    <div className="flex h-screen justify-center items-center text-gray-500 dark:text-gray-300">
+      Loading...
+    </div>
+  );
+}
+  // #######################################################################
   return (
     <div className="flex flex-col gap-14">
       <div className="flex flex-col gap-4 mt-12 px-7">
@@ -341,7 +404,6 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                           <Input
                             placeholder="First Name"
                             {...field}
-                            disabled
                             className="bg-white dark:bg-gray-900 dark:text-gray-100 border border-gray-500 px-2 py-1"
                           />
                         </FormControl>
@@ -359,7 +421,6 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                           <Input
                             placeholder="Last Name"
                             {...field}
-                            disabled
                             className="dark:text-gray-100 border border-gray-500 rounded-none px-2 py-1"
                           />
                         </FormControl>
@@ -378,7 +439,6 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                             <Input
                               placeholder="Student ID"
                               {...field}
-                              disabled
                               className="dark:text-gray-100 border border-gray-500 rounded-none px-2 py-1"
                             />
                           </FormControl>
@@ -396,7 +456,6 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                             <Input
                               placeholder="Enter Year"
                               {...field}
-                              disabled
                               className="dark:text-gray-100 border border-gray-500 rounded-none px-2 py-1"
                             />
                           </FormControl>
@@ -415,7 +474,6 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                           <Input
                             placeholder="Email"
                             {...field}
-                            disabled
                             className="dark:text-gray-100 border border-gray-500 rounded-none px-2 py-1"
                           />
                         </FormControl>
@@ -433,7 +491,6 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                           <Input
                             placeholder="Phone Number"
                             {...field}
-                            disabled
                             className="dark:text-gray-100 border border-gray-500 rounded-none px-2 py-1"
                           />
                         </FormControl>
@@ -607,7 +664,7 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
                       <FormField
                         control={form.control}
                         name="file"
-                        render={({ field }) => (
+                        render={() => (
                           <FormItem>
                             <FormLabel>Upload Photo (Image)</FormLabel>
                             <FormControl>
@@ -639,3 +696,215 @@ const IdandMailCardReplacementForm = ({ user }: { user: User | null }) => {
 };
 
 export default IdandMailCardReplacementForm;
+// *********************************************************************************
+//   const fetchPreviousApplicationData = useCallback(async () => {
+//     if (!isAuthenticated || !user) return;
+//     try {
+//       const response = await axios.get("/api/applications/check-previous", {
+//         withCredentials: true,
+//         headers: { "Cache-Control": "no-cache" },
+//       });
+//       const {
+//         hasPrevious,
+//         collage,
+//         department,
+//         program,
+//         monthlyApplicationCounts,
+//       } = response.data;
+//       setHasPreviousApplications(hasPrevious);
+
+//       if (hasPrevious && collage && department && program) {
+//         setPreviousData({
+//           Collage: collage,
+//           Department: department,
+//           Program: program,
+//         });
+//         form.setValue("Collage", collage);
+//         form.setValue("Department", department);
+//         form.setValue("Program", program);
+//         setSelectedCollege(collage);
+//         setFilteredDepartments(
+//           Departments.filter((dept) => dept.college === collage)
+//         );
+//       }
+
+//       form.setValue("monthlyApplicationCounts", {
+//         ID_CARD_REPLACEMENT: monthlyApplicationCounts?.ID_CARD_REPLACEMENT || 0,
+//         MAIL_CARD_REPLACEMENT:
+//           monthlyApplicationCounts?.MAIL_CARD_REPLACEMENT || 0,
+//       });
+//     } catch (error) {
+//       console.error("Error fetching previous application data:", error);
+//       toast.error("Failed to fetch previous application data.", {
+//         id: "fetch-error",
+//       });
+//     }
+//   }, [isAuthenticated, user, form]);
+
+//   useEffect(() => {
+//     setIsMounted(true);
+//     return () => setIsMounted(false);
+//   }, []);
+
+//   useEffect(() => {
+//     if (!isMounted || !isAuthenticated) return;
+//     fetchPreviousApplicationData();
+//   }, [isAuthenticated, fetchPreviousApplicationData, isMounted]);
+
+//   useEffect(() => {
+//     if (selectedCollege) {
+//       const filtered = Departments.filter(
+//         (dept) => dept.college === selectedCollege
+//       );
+//       setFilteredDepartments(filtered);
+//       form.setValue("Department", "");
+//     } else {
+//       setFilteredDepartments(Departments);
+//     }
+//   }, [selectedCollege, form]);
+
+//   const convertFileToBase64 = useCallback((file: File): Promise<string> => {
+//     return new Promise((resolve, reject) => {
+//       const reader = new FileReader();
+//       reader.onload = () => resolve(reader.result as string);
+//       reader.onerror = (error) => reject(error);
+//       reader.readAsDataURL(file);
+//     });
+//   }, []);
+
+// const onSubmit = useCallback(
+//   async (values: z.infer<typeof formSchema>) => {
+//     if (loading) {
+//       toast.error("Please wait, authentication is still loading.", {
+//         id: "auth-loading",
+//       });
+//       return;
+//     }
+//     if (!isAuthenticated) {
+//       toast.error("Please sign in to submit the application.", {
+//         id: "auth-error",
+//       });
+//       router.push("/sign-in");
+//       return;
+//     }
+
+//     const monthlyCounts = form.getValues("monthlyApplicationCounts") || {
+//       ID_CARD_REPLACEMENT: 0,
+//       MAIL_CARD_REPLACEMENT: 0,
+//     };
+//     if (
+//       values.applicationType === "ID_CARD_REPLACEMENT" &&
+//       (monthlyCounts.ID_CARD_REPLACEMENT ?? 0) > 0
+//     ) {
+//       toast.error(
+//         "You have already submitted an ID Card replacement application this month.",
+//         { id: "id-card-limit" }
+//       );
+//       return;
+//     }
+//     if (
+//       values.applicationType === "MAIL_CARD_REPLACEMENT" &&
+//       (monthlyCounts.MAIL_CARD_REPLACEMENT ?? 0) > 0
+//     ) {
+//       toast.error(
+//         "You have already submitted a MailCard replacement application this month.",
+//         { id: "mail-card-limit" }
+//       );
+//       return;
+//     }
+
+//     if (!values.file) {
+//       toast.error("Please upload a file to submit with your application.", {
+//         id: "file-error",
+//       });
+//       return;
+//     }
+
+//     try {
+//       setIsUploading(true);
+//       const base64Data = await convertFileToBase64(values.file);
+//       const fileData = {
+//         fileName: values.file.name,
+//         fileType: values.file.type,
+//         fileSize: values.file.size,
+//         fileData: base64Data,
+//       };
+
+//       const response = await axios.post(
+//         "/api/applications/CardReplacment",
+//         {
+//           Reason: values.Reason,
+//           applicationType: values.applicationType,
+//           Collage: values.Collage,
+//           Department: values.Department,
+//           Program: values.Program,
+//           file: fileData,
+//         },
+//         { withCredentials: true }
+//       );
+
+//       if (response.status === 202) {
+//         setIsVerifying(true);
+//         form.setValue("file", undefined);
+//         toast.success("Please check your email to verify your application.", {
+//           id: "verify-success",
+//         });
+//       } else {
+//         const applicationId = response.data?.id;
+//         if (!applicationId) {
+//           throw new Error("Invalid response from server. Missing 'id' field.");
+//         }
+//         form.setValue("file", undefined);
+//         router.push(`/applicationsDetail/${applicationId}/Detail`);
+//         toast.success(
+//           `Your ${
+//             values.applicationType === "ID_CARD_REPLACEMENT"
+//               ? "ID card"
+//               : "MailCard"
+//           } replacement application was successfully submitted`,
+//           { id: "submit-success" }
+//         );
+//       }
+//     } catch (err: any) {
+//       // Suppress console error logging for specific cases
+//       const errorMessage =
+//         err.response?.data?.error || err.message || "Unknown error";
+
+//       if (errorMessage === "Your data was not found in the JJU student list.") {
+//         toast.error("Your data was not found in the JJU student list.", {
+//           id: "student-not-found",
+//         });
+//       } else {
+//         toast.error(`Failed to submit application: ${errorMessage}`, {
+//           id: "submit-error",
+//         });
+//       }
+//     } finally {
+//       setIsUploading(false);
+//     }
+//   },
+//   [loading, isAuthenticated, form, router, convertFileToBase64]
+// );
+//   const onSubmitError = () => {
+//     toast.error("Please fix the form errors before submitting.", {
+//       id: "form-error",
+//     });
+//   };
+
+//   if (!isAuthenticated && !loading) {
+//     router.push("/sign-in");
+//     return null;
+//   }
+
+//   if (loading) {
+//     return (
+//       <div className="flex h-screen justify-center items-center text-gray-500 dark:text-gray-300">
+//         Loading...
+//       </div>
+//     );
+//   }
+
+
+// *********************************************************************************
+  // ########################################################################
+  

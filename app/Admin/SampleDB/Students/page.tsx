@@ -1,8 +1,7 @@
 "use client";
 import React from "react";
-import { toast } from "react-hot-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery,} from "@tanstack/react-query";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/collection/Admin-staff/SampleDB/data-table";
@@ -37,8 +36,6 @@ const SkeletonWrapper = () => (
 );
 
 const StudentList = () => {
-  const queryClient = useQueryClient();
-
   const { data, isLoading, isError, error } = useQuery<StudentsResponse>({
     queryKey: ["valid-students"],
     queryFn: async () => {

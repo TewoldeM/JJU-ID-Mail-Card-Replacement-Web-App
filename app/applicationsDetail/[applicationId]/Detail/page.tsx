@@ -16,7 +16,7 @@ export default async function ApplicationDetail({
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6 px-4 pt-4">Application Detail</h1>
+      <h1 className="text-3xl font-bold mb-6 px-32 pt-4">Application Detail</h1>
       <ApplicationDetailTable application={application} />
     </div>
   );

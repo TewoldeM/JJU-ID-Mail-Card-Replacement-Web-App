@@ -70,8 +70,7 @@ const ManageStudents = () => {
       </div>
 
       {/* Stats Cards */}
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
         <Card className="border-green-300 shadow-md h-48 w-full max-w-md mx-auto">
           <CardHeader className="text-green-600 text-xl font-semibold">
             Total Students
@@ -87,6 +86,15 @@ const ManageStudents = () => {
           </CardHeader>
           <CardContent className="text-3xl font-bold text-red-500">
             {totalBlocked}
+          </CardContent>
+        </Card>
+
+        <Card className="border-gray-500 shadow-md h-48 w-full max-w-md mx-auto">
+          <CardHeader className="text-gray-600 text-xl font-semibold">
+            Deleted Students
+          </CardHeader>
+          <CardContent className="text-3xl font-bold text-gray-500">
+            {totalDeleted}
           </CardContent>
         </Card>
       </div>

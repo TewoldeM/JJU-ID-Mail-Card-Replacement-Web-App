@@ -1,6 +1,6 @@
-import { SignJWT } from "jose";
+import { JWTPayload, SignJWT } from "jose";
 
-const generateAccessToken = async (payload: any) => {
+const generateAccessToken = async (payload: JWTPayload | undefined) => {
   const jwtSecret = process.env.JWT_SECRET;
   const jwtIssuer = process.env.JWT_ISSUER;
   const jwtAudience = process.env.JWT_AUDIENCE;

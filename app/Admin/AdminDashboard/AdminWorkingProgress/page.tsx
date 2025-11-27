@@ -2,8 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
 interface AdminWorkingProgressProps {
-  acceptedPercentage: number;
-  rejectedPercentage: number;
+  acceptedPercentage: 75; // Example value
+  rejectedPercentage: 25; // Example value
 }
 
 const AdminWorkingProgress = ({acceptedPercentage,rejectedPercentage,}: AdminWorkingProgressProps) => {

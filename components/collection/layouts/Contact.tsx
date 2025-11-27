@@ -48,7 +48,7 @@ const Contact = () => {
 
       setStatus("sent");
       setForm({ name: "", email: "", message: "" });
-    } catch (error) {
+    } catch {
       setStatus("error");
       setErrorMessage("An error occurred. Please try again later.");
     }
@@ -132,7 +132,7 @@ const Contact = () => {
 
           {status === "sent" && (
             <p className="text-sm text-green-600 dark:text-green-400 text-center">
-              Message sent! We'll respond soon.
+              Message sent! We will respond soon.
             </p>
           )}
           {status === "error" && (

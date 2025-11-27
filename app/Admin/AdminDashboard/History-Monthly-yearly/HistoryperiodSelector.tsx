@@ -8,8 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
-
 interface HistoryperiodSelectorProps {
   period: Period;
   setPeriod: (period: Period) => void;

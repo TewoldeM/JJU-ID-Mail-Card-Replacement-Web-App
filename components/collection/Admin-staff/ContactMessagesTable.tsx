@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -59,7 +60,7 @@ export default function ContactMessagesTable() {
   const [responseError, setResponseError] = useState<string | null>(null);
   const { token, isAuthenticated, login } = useAuth();
 
-  const refetchToken = async () => {
+  const refetchToken = useCallback(async () => {
     try {
       const response = await fetch("/api/auth/me", {
         credentials: "include",
@@ -67,7 +68,7 @@ export default function ContactMessagesTable() {
       if (response.ok) {
         const data = await response.json();
         console.log("Refetched token:", data.token); // Debug
-        login(data.token, data.refreshToken);
+        login(data.token, data.refreshToken, data.user);
         return data.token;
       } else {
         throw new Error("Failed to refetch token");
@@ -77,7 +78,7 @@ export default function ContactMessagesTable() {
       setError("Failed to authenticate. Please log in again.");
       return null;
     }
-  };
+  }, [login]); // Dependency: login
 
   useEffect(() => {
     console.log("Auth token:", token, "isAuthenticated:", isAuthenticated); // Debug
@@ -97,11 +98,10 @@ export default function ContactMessagesTable() {
       setAuthLoading(false);
       setError("You must be logged in to view messages.");
     }
-  }, [token, isAuthenticated, login]);
+  }, [token, isAuthenticated, refetchToken]);
 
-  const fetchMessages = async () => {
-    setLoading(true);
-    setError(null);
+  const fetchMessages = useCallback(async () => { setLoading(true);setError(null);
+  
     try {
       const params = new URLSearchParams({
         page: data.page.toString(),
@@ -128,81 +128,94 @@ export default function ContactMessagesTable() {
       }
       const result: ApiResponse = await response.json();
       setData(result);
-    } catch (err: any) {
-      setError(err.message || "Failed to load messages. Please try again.");
+    } catch (err) {
+      setError("Failed to load messages. Please try again.");
       console.error("Fetch error:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [data.page, data.limit, statusFilter, token]); // Dependencies: data.page, data.limit, statusFilter, token
 
-  const markAsRead = async (id: string) => {
-    try {
-      const response = await fetch(`/api/auth/admin/contact-messages/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: "include",
-        body: JSON.stringify({ status: "READ" }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to mark as read");
-      }
-      setData((prev) => ({
-        ...prev,
-        messages: prev.messages.map((msg) =>
-          msg.id === id ? { ...msg, status: "READ" } : msg
-        ),
-      }));
-    } catch (err: any) {
-      setError(err.message || "Failed to mark message as read.");
-      console.error("Mark as read error:", err);
-    }
-  };
-
-  const sendResponse = async (id: string, message: string) => {
-    setResponseLoading(true);
-    setResponseError(null);
-    try {
-      const response = await fetch(
-        `/api/auth/admin/contact-messages/${id}/respond`,
-        {
-          method: "POST",
+  const markAsRead = useCallback(
+    async (id: string) => {
+      try {
+        const response = await fetch(`/api/auth/admin/contact-messages/${id}`, {
+          method: "PATCH",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
           credentials: "include",
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({ status: "READ" }),
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to mark as read");
         }
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to send response");
+        setData((prev) => ({
+          ...prev,
+          messages: prev.messages.map((msg) =>
+            msg.id === id ? { ...msg, status: "READ" } : msg
+          ),
+        }));
+      } catch (err) {
+        setError("Failed to mark message as read.");
+        console.error("Mark as read error:", err);
       }
-      setSelectedMessage(null);
-      setResponseMessage("");
-      fetchMessages();
-    } catch (err: any) {
-      setResponseError(err.message || "Failed to send response.");
-      console.error("Send response error:", err);
-    } finally {
-      setResponseLoading(false);
-    }
-  };
+    },
+    [token]
+  ); // Dependency: token
+
+  const sendResponse = useCallback(
+    async (id: string, message: string) => {
+      setResponseLoading(true);
+      setResponseError(null);
+      try {
+        const response = await fetch(
+          `/api/auth/admin/contact-messages/${id}/respond`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+            body: JSON.stringify({ message }),
+          }
+        );
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to send response");
+        }
+        setSelectedMessage(null);
+        setResponseMessage("");
+        fetchMessages();
+      } catch (err) {
+        setResponseError("Failed to send response.");
+        console.error("Send response error:", err);
+      } finally {
+        setResponseLoading(false);
+      }
+    },
+    [token, fetchMessages]
+  ); // Dependencies: token, fetchMessages
 
   useEffect(() => {
     if (isAuthenticated && token && !authLoading) {
       fetchMessages();
     }
-  }, [data.page, statusFilter, token, isAuthenticated, authLoading]);
+  }, [
+    data.page,
+    statusFilter,
+    token,
+    isAuthenticated,
+    authLoading,
+    fetchMessages,
+  ]);
 
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = useCallback((newPage: number) => {
     setData((prev) => ({ ...prev, page: newPage }));
-  };
+  }, []);
 
   return (
     <>
@@ -316,12 +329,15 @@ export default function ContactMessagesTable() {
           <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-900 rounded-lg shadow-xl p-6 w-full max-w-md">
             <Dialog.Title className="text-xl font-bold">
               Respond to
-              <span className="text-green-300 font-semibold  ml-2">
+              <span className="text-green-300 font-semibold ml-2">
                 {selectedMessage?.name}
               </span>
             </Dialog.Title>
             <Dialog.Description className="mt-2 text-lg">
-              Send a response to <span className="dark:text-gray-300 font-semibold">{selectedMessage?.email}</span>
+              Send a response to{" "}
+              <span className="dark:text-gray-300 font-semibold">
+                {selectedMessage?.email}
+              </span>
             </Dialog.Description>
             <div className="mt-4">
               <textarea

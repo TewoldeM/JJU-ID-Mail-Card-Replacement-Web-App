@@ -39,7 +39,6 @@ interface StudentsResponse {
   students: StudentsList[];
   totalStudents: number;
   totalBlocked: number;
-  totalDeleted: number;
 }
 
 const StudentList = () => {
@@ -80,7 +79,7 @@ const StudentList = () => {
         `Student ${IsBlocked ? "blocked" : "unblocked"} successfully.`
       );
     },
-    onError: (err: any) => {
+    onError: (err) => {
       console.error("Error blocking/unblocking student:", err);
       toast.error(err.message || "Failed to block/unblock student.");
     },

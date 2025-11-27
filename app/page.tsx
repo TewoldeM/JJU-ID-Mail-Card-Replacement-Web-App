@@ -1,19 +1,20 @@
 "use client";
-
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState,} from "react";
 import { useRouter } from "next/navigation";
-import { Role, User } from "@prisma/client";
+import {User } from "@prisma/client";
 import Cookies from "js-cookie";
-import HeroImageslaider from "@/components/collection/layouts/HeroImageslaider";
-import AboutTheWebApp from "@/components/collection/layouts/About";
-import GuideSteps from "@/components/collection/GuideSteps";
-import { Separator } from "@/components/ui/separator";
-import { SpotlightPreview } from "@/components/collection/Acentry/SpotLight";
-// import { SpotlightPreview } from "@/components/collection/Acentry/SpotLight";
+import { HeroSection } from "@/components/collection/layouts/Hero";
+import { AboutSection } from "@/components/collection/layouts/sections/About";
+import { FeaturesSection } from "@/components/collection/layouts/sections/FeaturesSection";
+import { StepsSection } from "@/components/collection/layouts/sections/StepsSection";
+import { TestimonialsSection } from "@/components/collection/layouts/sections/TestmonialSection";
+import { FAQSection } from "@/components/collection/layouts/sections/FAQSection";
+import { CTASection } from "@/components/collection/layouts/sections/CTASection";
+import { WhyChooseSection } from "@/components/collection/layouts/sections/WhyChooseSection";
 
 export default function UserProfile() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const [, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -27,14 +28,14 @@ export default function UserProfile() {
           Authorization: `Bearer ${token}`,
         },
       });
-      if (!res.ok) {
-        if (res.status === 401) {
-          router.push("/sign-in");
-        } else {
-          setError(`Failed to fetch user data. Status code: ${res.status}`);
-        }
-        return;
-      }
+      // if (!res.ok) {
+      //   if (res.status === 401) {
+      //     router.push("/sign-in");
+      //   } else {
+      //     setError(`Failed to fetch user data. Status code: ${res.status}`);
+      //   }
+      //   return;
+      // }
       const userData = await res.json();
       console.log("userData", userData);
       setUser(userData);
@@ -56,7 +57,6 @@ export default function UserProfile() {
     return (
       <div className="flex flex-col gap-4 justify-center items-center h-screen">
         <div>
-          {/* <img src="/wait.jpg" alt="Loading" width="300" height="300" /> */}
           <div>Please wait...</div>
           <h1 className="animate-accordion-up rotate-1"></h1>
         </div>
@@ -66,17 +66,15 @@ export default function UserProfile() {
 
   return (
     <>
-      <SpotlightPreview />
-      <Separator />
-      <GuideSteps />
-      <Separator />
-      <AboutTheWebApp />
-      <Separator />
+      <HeroSection />
+      <AboutSection />
+      <FeaturesSection />
+      <StepsSection />
+      <WhyChooseSection />
+      <TestimonialsSection />
+      <FAQSection />
+      <CTASection />
     </>
   );
 }
-{
-  /* <div>Welcome, {user?.FirstName}</div>
-      <div>Student ID: {user?.studentId}</div>
-      <div>Email: {user?.email}</div> */
-}
+

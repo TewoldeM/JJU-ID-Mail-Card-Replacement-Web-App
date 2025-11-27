@@ -21,33 +21,49 @@ export async function POST(req: NextRequest) {
     } = await req.json();
 
     // Input validation
-    if (
-      !Password ||
-      !StudentId ||
-      !FirstName ||
-      !LastName ||
-      !Email ||
-      !Year ||
-      !PhoneNumber
-    ) {
+    if (!FirstName || !LastName || !Password || !StudentId || !Email || !Year) {
       return NextResponse.json(
-        { error: "Please fill in all required fields" },
+        {
+          error: "Missing required fields",
+          missing: { FirstName, LastName, Password, StudentId, Email, Year },
+        },
         { status: 400 }
       );
     }
+
+    // Validate password strength
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+        if (!passwordRegex.test(Password)) {
+       return NextResponse.json(
+    {
+      error:
+        "Password must have 1 uppercase, 1 lowercase, 1 number, 1 special character (!@#$%^&*)",
+    },
+    { status: 400 }
+  );
+}
 
     // Validate StudentId as a 4-digit number
     if (!/^\d{4}$/.test(StudentId)) {
       return NextResponse.json(
-        { error: "Student ID must be a 4-digit number" },
+        { error: "Student ID must be exactly 4 digits" },
         { status: 400 }
       );
     }
 
-    // Validate phone number
-    if (!/^\d{10}$/.test(PhoneNumber)) {
+    // Validate Year as a 2-digit number
+    if (!/^\d{2}$/.test(Year)) {
       return NextResponse.json(
-        { error: "Phone number must be 10 digits" },
+        { error: "Year must be exactly 2 digits" },
+        { status: 400 }
+      );
+    }
+
+    // Validate phone number (optional)
+    if (PhoneNumber && !/^\d{10}$/.test(PhoneNumber)) {
+      return NextResponse.json(
+        { error: "Phone number must be 10 digits if provided" },
         { status: 400 }
       );
     }
@@ -56,13 +72,25 @@ export async function POST(req: NextRequest) {
     const [existingEmail, existingPhoneNumber, existingStudentId] =
       await Promise.all([
         prisma.user.findUnique({ where: { Email } }),
-        prisma.user.findFirst({ where: { PhoneNumber } }),
+        PhoneNumber ? prisma.user.findFirst({ where: { PhoneNumber } }) : null,
         prisma.user.findUnique({ where: { StudentId } }),
       ]);
 
-    if (existingEmail || existingPhoneNumber || existingStudentId) {
+    if (existingEmail) {
       return NextResponse.json(
-        { error: "Student ID, Email, or phone number already exists" },
+        { error: "Email already exists" },
+        { status: 400 }
+      );
+    }
+    if (existingPhoneNumber) {
+      return NextResponse.json(
+        { error: "Phone number already exists" },
+        { status: 400 }
+      );
+    }
+    if (existingStudentId) {
+      return NextResponse.json(
+        { error: "Student ID already exists" },
         { status: 400 }
       );
     }
@@ -93,7 +121,7 @@ export async function POST(req: NextRequest) {
         StudentId,
         Year,
         Email,
-        PhoneNumber,
+        PhoneNumber: PhoneNumber || null, // Allow null for optional PhoneNumber
         Collage: "Default College",
         Department: "Default Department",
         Roles: {
@@ -191,10 +219,10 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-  } catch (error: any) {
-    console.error("Signup error:", error);
+  } catch (error) {
+    console.error("Signup error:",error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error",},
       { status: 500 }
     );
   } finally {

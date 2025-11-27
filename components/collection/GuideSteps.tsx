@@ -1,8 +1,7 @@
 import React from "react";
-import { Separator } from "../ui/separator";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { ArrowRight } from "lucide-react";
-
+import Image from "next/image";
 const GuideSteps = () => {
   return (
     <div className="flex flex-col items-center p-2">
@@ -16,7 +15,7 @@ const GuideSteps = () => {
             <h2 className="text-lg font-bold mb-2">Step 1: Signup/Signin</h2>
           </CardHeader>
           <CardContent>
-            <img
+            <Image
               src="/Signupandsignin2.png"
               alt="Arrow"
               className="w-72 h-44 mb-2"
@@ -35,7 +34,7 @@ const GuideSteps = () => {
             </h2>
           </CardHeader>
           <CardContent>
-            <img src="/Apply1.webp" alt="Arrow" className="w-72 h-44 mb-2" />
+            <Image src="/Apply1.webp" alt="Arrow" className="w-72 h-44 mb-2" />
             <p className="text-gray-400 mb-4">Fill out the application form</p>
           </CardContent>
         </Card>
@@ -51,7 +50,7 @@ const GuideSteps = () => {
             </h2>
           </CardHeader>
           <CardContent>
-            <img
+            <Image
               src="/premium_photo-1681928677639-44267dea6af7.avif"
               alt="Arrow"
               className="w-72 h-44 mb-2"

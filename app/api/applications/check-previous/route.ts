@@ -21,8 +21,8 @@ if (!token) {
     try {
       const result = await jwtVerify(token, secret, { clockTolerance: 15 });
       payload = result.payload;
-    } catch (jwtError: any) {
-      console.error("JWT verification failed:", jwtError);
+    } catch (error) {
+      console.error("JWT verification failed:", error);
       return NextResponse.json(
         { error: "Invalid or expired token" },
         { status: 401 }
@@ -48,7 +48,7 @@ if (!token) {
       if (!user) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
-    } catch (userError) {
+    } catch{
       return NextResponse.json(
         { error: "Failed to fetch user" },
         { status: 500 }
@@ -92,7 +92,7 @@ if (!token) {
         },
       });
 
-    } catch (prevAppsError) {
+    } catch{
       return NextResponse.json(
         { error: "Failed to fetch previous applications" },
         { status: 500 }
@@ -115,15 +115,12 @@ if (!token) {
       },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch{
     console.error("Unexpected error in API route:", {
-      message: error.message,
-      stack: error.stack,
     });
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error.message || "Unknown error",
       },
       { status: 500 }
     );

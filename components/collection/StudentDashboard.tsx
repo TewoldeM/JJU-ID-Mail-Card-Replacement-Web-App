@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -30,7 +30,7 @@ interface userprops {
 }
 
 const StudentDashboard = ({ user }: { user: userprops }) => {
-  const currentApplication = user.Applications[0];
+  const [notifications] = useState(user.Notifications);
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString("en-US", {
@@ -63,7 +63,7 @@ const StudentDashboard = ({ user }: { user: userprops }) => {
       {/* Top Two Panels: Profile + Current App */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Profile */}
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-2">Your Profile</h2>
           <p>
             <span className="font-medium">Name:</span> {user.FirstName}{" "}
@@ -89,32 +89,32 @@ const StudentDashboard = ({ user }: { user: userprops }) => {
         </div>
 
         {/* Current Application */}
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-2">Current Application</h2>
-          {currentApplication ? (
+          {user.Applications[0] ? (
             <>
               <p>
                 Type:{" "}
                 <span className="font-medium">
-                  {currentApplication.applicationType.replace("_", " ")}
+                  {user.Applications[0].applicationType.replace("_", " ")}
                 </span>
               </p>
               <p>
                 Status:{" "}
                 <span
                   className={`font-medium ${getStatusColor(
-                    currentApplication.status
+                    user.Applications[0].status
                   )}`}
                 >
-                  {currentApplication.status}
+                  {user.Applications[0].status}
                 </span>
               </p>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Submitted on: {formatDate(currentApplication.createdAt)}
+                Submitted on: {formatDate(user.Applications[0].createdAt)}
               </p>
               <div className="mt-4">
                 <Link
-                  href={`/applicationsDetail/${currentApplication.id}/Detail`}
+                  href={`/applicationsDetail/${user.Applications[0].id}/Detail`}
                 >
                   <Button className="px-5 py-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
                     View Details
@@ -131,7 +131,7 @@ const StudentDashboard = ({ user }: { user: userprops }) => {
       {/* Bottom Two Panels: History + Notifications */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Application History */}
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Application History</h2>
           {user.Applications.length > 0 ? (
             <ul className="space-y-2">
@@ -154,48 +154,39 @@ const StudentDashboard = ({ user }: { user: userprops }) => {
             <p className="text-gray-500">No application history.</p>
           )}
           {user.Applications.length > 1 ? (
-            <Link href="/applicationsDetail/applicationHistory">
-              <Button className="px-5 py-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
-                View Details
-              </Button>
-            </Link>
-          ) : (
-            ""
-          )}
-          {/* <div className="mt-4">
-     
-          </div> */}
+            <div className="mt-4">
+              {/* <Link href="/applicationsDetail/applicationHistory">
+                <Button className="px-5 py-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
+                  View Details
+                </Button>
+              </Link> */}
+            </div>
+          ) : null}
         </div>
 
         {/* Notifications */}
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Notifications</h2>
-          {user.Notifications.length > 0 ? (
-            <ul className="list-disc pl-5 text-sm space-y-2">
-              {user.Notifications.slice(0, 3).map((notif) => (
+          {notifications.length > 0 ? (
+            <ul className="list-none pl-0 text-sm space-y-2 max-h-[12rem] overflow-y-auto pr-2 custom-scrollbar">
+              {notifications.map((notif) => (
                 <li
                   key={notif.id}
-                  className={notif.read ? "text-gray-500" : "font-medium"}
+                  className={`flex items-center p-2 rounded-md transition-colors duration-200 ${
+                    notif.read
+                      ? "text-gray-500"
+                      : "text-gray-800 dark:text-gray-100"
+                  } hover:bg-gray-100 dark:hover:bg-gray-700`}
                 >
-                  {notif.message} ({formatDate(notif.createdAt)})
+                  <span className="flex-1">
+                    {notif.message} ({formatDate(notif.createdAt)})
+                  </span>
                 </li>
               ))}
             </ul>
           ) : (
             <p className="text-gray-500">No notifications.</p>
           )}
-
-          <div className="mt-4">
-            {user.Notifications.length > 2 ? (
-              <Link href={`/StudentDashboard/Notfications`}>
-                <Button className="px-5 py-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
-                  {user.Notifications.length > 3 ? "See More" : "View Details"}
-                </Button>
-              </Link>
-            ) : (
-              ""
-            )}
-          </div>
         </div>
       </div>
 
@@ -207,6 +198,28 @@ const StudentDashboard = ({ user }: { user: userprops }) => {
           </Button>
         </Link>
       </div>
+
+      {/* Custom Scrollbar Styles */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #888;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #555;
+        }
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #888 #f1f1f1;
+        }
+      `}</style>
     </div>
   );
 };

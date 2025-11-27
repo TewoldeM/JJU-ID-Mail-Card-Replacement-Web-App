@@ -53,7 +53,7 @@ export function DataTable({ columns, data }: DataTableProps) {
   });
 
   // Function to handle CSV export
-  const handleExportCSV = (data: any[]) => {
+  const handleExportCSV = (data: ApplicationData[]) => {
     if (!data || data.length === 0) return; // Guard against empty data
     const csv = generateCsv(csvConfig)(data);
     download(csvConfig)(csv);
@@ -80,6 +80,7 @@ export function DataTable({ columns, data }: DataTableProps) {
               createdAt: row.original.createdAt,
               Year: row.original.Year,
               applicationDetail: row.original.applicationDetail,
+              photo: row.original.photo, // Include the missing 'photo' property
             }));
             handleExportCSV(exportData);
           }}

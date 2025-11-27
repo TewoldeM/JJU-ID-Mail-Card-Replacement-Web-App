@@ -31,8 +31,8 @@ export const columns: ColumnDef<ValidStudent>[] = [
       </Button>
     ),
     cell: ({ row }) => {
-      const studentId = row.getValue("StudentId") as string;
-      return studentId.padStart(4, "0"); // Ensure 4-digit display
+      const StudentId = row.getValue("StudentId") as string;
+      return StudentId.padStart(4, "0"); // Ensure 4-digit display
     },
   },
   {

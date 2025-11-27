@@ -132,14 +132,10 @@ export default function AddStudentForm() {
       } else {
         throw new Error(response.data?.error || "Failed to add student.");
       }
-    } catch (err: any) {
-      console.error("Add student error:", err);
+    } catch {
+      console.error("Add student error:");
       toast.error(
-        "Failed to add student: " +
-          (err.response?.data?.error || err.message || "Unknown error")
-      );
-    } finally {
-      setIsSubmitting(false);
+        "Failed to add student: ");
     }
   };
 

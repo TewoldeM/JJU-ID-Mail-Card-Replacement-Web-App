@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import Roouteproviders from "@/components/collection/Providers/RooutProvider";
-import Footer from "@/components/collection/layouts/Footer";
 import ServerNavbar from "./UserProfile/Navbarfetchuser/page";
 import Providers from "@/components/collection/Providers/Providers";
 import { Toaster } from "react-hot-toast";
@@ -74,7 +73,7 @@ export default function RootLayout({
             />
 
             {children}
-            <Footerpage />
+
           </Roouteproviders>
         </Providers>
       </body>

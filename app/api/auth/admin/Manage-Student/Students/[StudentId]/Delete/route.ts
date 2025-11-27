@@ -34,6 +34,6 @@ export async function POST(request: Request) {
       },
     });
     return NextResponse.json({ message: "User deleted successfully" });
-  } catch (error:any) {
-    return NextResponse.json({ message: "Internal server error", error: error.message },{ status: 500 });}   
+  } catch{
+    return NextResponse.json({error: "Internal server error"},{ status: 500 });}   
 }

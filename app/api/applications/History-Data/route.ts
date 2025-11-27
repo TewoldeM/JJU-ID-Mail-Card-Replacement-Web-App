@@ -36,10 +36,10 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json(data, { status: 200 });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error fetching history data:", error);
     return NextResponse.json(
-      { message: "Internal server error", error: error.message },
+      { message: "Internal server error"},
       { status: 500 }
     );
   }

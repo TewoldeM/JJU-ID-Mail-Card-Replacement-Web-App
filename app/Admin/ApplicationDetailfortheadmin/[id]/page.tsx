@@ -1,7 +1,10 @@
 import UserInfoTable from "@/components/collection/Admin-staff/ApplicationDetailfortheadmin/page";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { PrismaClient, FileCategory } from "@prisma/client";
+import Image from "next/image";
+import Link from "next/link";
 
 const prisma = new PrismaClient();
 
@@ -12,7 +15,7 @@ interface ApplicationDetailfortheadminProps {
 const ApplicationDetailfortheadmin = async ({
   params,
 }: ApplicationDetailfortheadminProps) => {
-  const id = params.id; // This is fine; params is not a Promise
+const id = params.id;
   const application = await prisma.application.findUnique({
     where: { id },
     include: {
@@ -59,14 +62,6 @@ const ApplicationDetailfortheadmin = async ({
 
   const photo = application.files[0]?.fileData || null; // Base64-encoded photo data or null
 
-  const handleAccept = async () => {
-    // Handle accept logic here
-  };
-
-  const handleReject = async () => {
-    // Handle reject logic here
-  };
-
   return (
     <div className="p-6">
       <Card className="mb-6">
@@ -92,7 +87,7 @@ const ApplicationDetailfortheadmin = async ({
           <div className="mt-4">
             <strong>Submitted Photo:</strong>
             {photo ? (
-              <img
+              <Image
                 src={photo}
                 alt="Student submitted photo"
                 className="mt-2 h-32 w-32 object-cover rounded"
@@ -109,11 +104,22 @@ const ApplicationDetailfortheadmin = async ({
         <UserInfoTable userData={userData} application={applicationContext} />
       </div>
       <div className="flex flex-col md:flex-row mt-8 gap-12 ml-6">
-        <Button className="bg-gray-800 hover:bg-gray-900 text-white">
-          Back to Dashboard
+        <Button
+          variant="outline"
+          className={cn(
+            "bg-green-700 hover:bg-green-800 border-green-600 hover:border-2 text-white hover:text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline border-2 shadow-md"
+          )}
+        >
+          <Link href="/Admin/AdminDashboard">Back to Dashboard</Link>
         </Button>
-        <Button className="bg-gray-800 hover:bg-gray-900 text-white">
-          Back to Applications
+        <Button
+          className={cn(
+            "bg-green-700 hover:bg-green-800 border-green-600 hover:border-2 text-white hover:text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline border-2 shadow-md"
+          )}
+        >
+          <Link href="/Admin/Applications-Data-Table">
+            Back to Applications
+          </Link>
         </Button>
       </div>
     </div>

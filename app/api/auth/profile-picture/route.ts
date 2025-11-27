@@ -33,10 +33,10 @@ export async function GET(req: NextRequest) {
       { profilePicture: user.ProfilePicture || null },
       { status: 200 }
     );
-  } catch (error: any) {
-    console.error("Profile picture fetch error:", error);
+  } catch {
+    console.error("Profile picture fetch error:",);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error", },
       { status: 500 }
     );
   } finally {

@@ -83,11 +83,9 @@ export async function POST(request: Request) {
       message: "Email sent successfully",
       messageId: responseBody.Messages[0].To[0].MessageID,
     });
-  } catch (error:any) {
-    console.error("Error sending email:", error);
+  } catch{
     return NextResponse.json(
-      { error: "Failed to send email", details: error.message },
-      { status: error.statusCode || 500 }
+      { error: "Failed to send email",},
     );
   }
 }

@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       Program,
     };
     const missingFields = Object.entries(requiredFields)
-      .filter(([_, value]) => !value)
+      .filter(([value]) => !value)
       .map(([key]) => key);
     if (missingFields.length > 0) {
       return NextResponse.json(

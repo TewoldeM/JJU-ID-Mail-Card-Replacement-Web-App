@@ -77,9 +77,9 @@ export default function AddStudentForm() {
         toast.success("Student added successfully!");
         form.reset();
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error adding student:", error);
-      toast.error(error.response?.data?.message || "Failed to add student.");
+      toast.error("Failed to add student.");
     }
   };
 

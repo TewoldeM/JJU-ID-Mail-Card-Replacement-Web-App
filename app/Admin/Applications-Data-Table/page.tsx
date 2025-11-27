@@ -55,7 +55,7 @@ const AdminApplicationsPage = async () => {
           <div>
             <p className="text-3xl font-bold">Manage Applications</p>
             <p className="text-muted-foreground">
-              Manage Student's Applications
+              Manage Students Applications
             </p>
           </div>
         </div>

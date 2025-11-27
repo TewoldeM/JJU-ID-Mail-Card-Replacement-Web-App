@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-
+import Image from "next/image";
 const AboutUS = () => {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -19,7 +19,7 @@ const AboutUS = () => {
         }`}
       >
         <div className="relative">
-          <img
+          <Image
             src="/photo_2023-02-08_11-25-40.jpg"
             alt="Jigjiga University"
             className="w-full h-96 object-cover rounded-lg shadow-lg"
@@ -38,12 +38,12 @@ const AboutUS = () => {
         
             Once an application is submitted, students receive real-time updates
             on the status of their request. Applications are reviewed by the
-            Student Dean's office, which may approve or reject the request based
+            Student Deans office, which may approve or reject the request based
             on the provided details.
     
          
             If approved, students will receive a secure approval code via
-            notification, which they must present at the Dean’s Office to
+            notification, which they must present at the Deans Office to
             collect their new ID or mail card. In case of rejection, a reason
             will be provided for transparency and guidance.
           </p>
