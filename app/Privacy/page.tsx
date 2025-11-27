@@ -1,4 +1,6 @@
-import { Layout } from "@/components/layout/Layout";
+"use client";
+
+import { Layout } from "@/components/collection/layouts/layout";
 import { Shield } from "lucide-react";
 
 const Privacy = () => {

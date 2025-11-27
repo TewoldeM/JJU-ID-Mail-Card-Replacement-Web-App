@@ -1,8 +1,11 @@
-import { Layout } from "@/components/layout/Layout";
+"use client";
+
 import { Mail, Phone, MapPin, Clock, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+
 import { cn } from "@/lib/utils";
+import { useScrollAnimation } from "@/hooks/use-Scroll-Animation";
+import { Layout } from "@/components/collection/layouts/layout";
 
 const contactInfo = [
   {

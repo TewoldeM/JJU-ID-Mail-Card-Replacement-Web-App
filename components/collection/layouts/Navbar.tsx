@@ -9,11 +9,11 @@ import { usePathname } from "next/navigation";
 
 const navLinks = [
   { name: "Home", path: "/" },
-  { name: "About", path: "/about" },
-  { name: "Features", path: "/features" },
-  { name: "Steps", path: "/steps" },
-  { name: "Track Status", path: "/status" },
-  { name: "Contact", path: "/contact" },
+  { name: "About", path: "/About" },
+  { name: "Features", path: "/Features" },
+  { name: "Steps", path: "/Steps" },
+  { name: "Track Status", path: "/Status" },
+  { name: "Contact", path: "/Contact" },
 ];
 
 export function Navbar() {
@@ -24,14 +24,14 @@ export function Navbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass-effect">
       <div className="container-custom">
-        <div className="flex items-center justify-between h-20 md:h-20">
+        <div className="flex items-center justify-between h-20 md:h-28">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
             <div className="p-2 rounded-lg bg-primary text-primary-foreground transition-transform group-hover:scale-105">
-              <GraduationCap className="w-6 h-6" />
+              <GraduationCap className="w-10 h-10" />
             </div>
             <div className="hidden sm:block">
-              <span className="font-heading font-bold text-lg text-foreground">
+              <span className="font-heading font-bold text-3xl text-foreground">
                 JJU
               </span>
               <span className="font-heading text-sm text-muted-foreground block -mt-1">
@@ -47,7 +47,7 @@ export function Navbar() {
                 key={link.path}
                 href={link.path}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                  "px-6 py-2 rounded-lg text-lg font-medium transition-all duration-200",
                   pathname === link.path
                     ? "bg-primary text-primary-foreground"
                     : "text-foreground hover:bg-accent hover:text-accent-foreground"
@@ -73,7 +73,7 @@ export function Navbar() {
               )}
             </Button>
 
-            <Button className="hidden md:flex" size="sm">
+            <Button className="hidden md:flex" size="lg">
               Sign In
             </Button>
 

@@ -1,140 +1,167 @@
-"use client";
-import React from "react";
+
+import {
+  GraduationCap,
+  Facebook,
+  Twitter,
+  Instagram,
+  Mail,
+  Phone,
+  MapPin,
+} from "lucide-react";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext";
-import { Facebook, Instagram, Twitter, Send } from "lucide-react";
 
-// Navigation items for students
-const studentItems = [
-  { label: "Card Replacement", link: "/applications/IdandMailCardReplacement" },
-  { label: "Dashboard", link: "/StudentDashboard" },
-  { label: "About", link: "/About" },
-  { label: "Contact", link: "/Contact" },
-];
+const footerLinks = {
+  main: [
+    { name: "Home", path: "/" },
+    { name: "About", path: "/about" },
+    { name: "Features", path: "/features" },
+    { name: "Steps", path: "/steps" },
+  ],
+  support: [
+    { name: "Contact", path: "/contact" },
+    { name: "Track Status", path: "/status" },
+    { name: "FAQ", path: "/#faq" },
+  ],
+  legal: [
+    { name: "Privacy Policy", path: "/privacy" },
+    { name: "Terms & Conditions", path: "/terms" },
+  ],
+};
 
-// Navigation items for admins
-const adminItems = [
-  { label: "Admin Dashboard", link: "/Admin/AdminDashboard" },
-  { label: "Manage Student", link: "/Admin/AdminDashboard/ManageStudents" },
-  { label: "Applications", link: "/Admin/Applications-Data-Table" },
-];
-
-interface FooterProps {
-  userRole: string | null;
-}
-
-const Footer: React.FC<FooterProps> = ({ userRole }) => {
-  const {loading } = useAuth();
-  const quickLinks = userRole === "ADMIN" ? adminItems : studentItems;
-
-  // Prevent rendering until auth state is resolved
-  if (loading) {
-    return null;
-  }
-
+export function Footer() {
   return (
-    <footer className="bg-white dark:bg-gray-950  text-gray-900 dark:text-white py-12">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Quick Links Section */}
+    <footer className="bg-card border-t border-border">
+      <div className="container-custom section-padding">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+          {/* Brand */}
+          <div className="lg:col-span-1">
+            <Link href="/" className="flex items-center gap-2 mb-4">
+              <div className="p-2 rounded-lg bg-primary text-primary-foreground">
+                <GraduationCap className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="font-heading font-bold text-lg text-foreground">
+                  Jigjiga University
+                </span>
+                <span className="font-heading text-sm text-muted-foreground block -mt-1">
+                  ID & Meal Card System
+                </span>
+              </div>
+            </Link>
+            <p className="text-muted-foreground text-sm mb-4">
+              Simplifying card replacement for Jigjiga University students with
+              a modern, transparent online system.
+            </p>
+            <div className="flex gap-3">
+              <a
+                href="#"
+                className="p-2 rounded-lg bg-accent text-accent-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
+              >
+                <Facebook className="w-4 h-4" />
+              </a>
+              <a
+                href="#"
+                className="p-2 rounded-lg bg-accent text-accent-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
+              >
+                <Twitter className="w-4 h-4" />
+              </a>
+              <a
+                href="#"
+                className="p-2 rounded-lg bg-accent text-accent-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
+              >
+                <Instagram className="w-4 h-4" />
+              </a>
+            </div>
+          </div>
+
+          {/* Quick Links */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-200">
+            <h4 className="font-heading font-semibold text-foreground mb-4">
               Quick Links
-            </h3>
+            </h4>
             <ul className="space-y-2">
-              {quickLinks.map((item) => (
-                <li key={item.label}>
+              {footerLinks.main.map((link) => (
+                <li key={link.path}>
                   <Link
-                    href={item.link}
-                    className="text-gray-600 dark:text-white hover:text-gray-900 transition-colors"
+                    href={link.path}
+                    className="text-muted-foreground hover:text-primary transition-colors text-sm"
                   >
-                    {item.label}
+                    {link.name}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Social Media Section */}
+          {/* Support */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-200">
-              Follow Us
-            </h3>
-            <div className="flex space-x-4">
-              <Link
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-600 dark:text-white hover:text-gray-900 transition-colors"
-                aria-label="Facebook"
-              >
-                <Facebook size={24} />
-              </Link>
-              <Link
-                href="https://x.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-600 dark:text-white hover:text-gray-900 transition-colors"
-                aria-label="X"
-              >
-                <Twitter size={24} />
-              </Link>
-              <Link
-                href="https://telegram.org"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-600 dark:text-white hover:text-gray-900 transition-colors"
-                aria-label="Telegram"
-              >
-                <Send size={24} />
-              </Link>
-              <Link
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-600 dark:text-white hover:text-gray-900 transition-colors"
-                aria-label="Instagram"
-              >
-                <Instagram size={24} />
-              </Link>
-            </div>
+            <h4 className="font-heading font-semibold text-foreground mb-4">
+              Support
+            </h4>
+            <ul className="space-y-2">
+              {footerLinks.support.map((link) => (
+                <li key={link.path}>
+                  <Link
+                    href={link.path}
+                    className="text-muted-foreground hover:text-primary transition-colors text-sm"
+                  >
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <h4 className="font-heading font-semibold text-foreground mb-4 mt-6">
+              Legal
+            </h4>
+            <ul className="space-y-2">
+              {footerLinks.legal.map((link) => (
+                <li key={link.path}>
+                  <Link
+                    href={link.path}
+                    className="text-muted-foreground hover:text-primary transition-colors text-sm"
+                  >
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
 
-          {/* Contact Info Section */}
+          {/* Contact Info */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-200">
+            <h4 className="font-heading font-semibold text-foreground mb-4">
               Contact Us
-            </h3>
-            <p className="text-gray-600 dark:text-white">
-              Email:{" "}
-              <a
-                href="mailto:support@example.com"
-                className="hover:text-gray-900 transition-colors"
-              >
-                support@example.com
-              </a>
-            </p>
-            <p className="text-gray-600 dark:text-white">
-              Phone:{" "}
-              <a
-                href="tel:+1234567890"
-                className="hover:text-gray-900 transition-colors"
-              >
-                +1 (234) 567-890
-              </a>
-            </p>
+            </h4>
+            <ul className="space-y-3">
+              <li className="flex items-start gap-3 text-sm text-muted-foreground">
+                <MapPin className="w-4 h-4 mt-0.5 text-primary flex-shrink-0" />
+                <span>
+                  Jigjiga University, Jigjiga, Somali Region, Ethiopia
+                </span>
+              </li>
+              <li className="flex items-center gap-3 text-sm text-muted-foreground">
+                <Mail className="w-4 h-4 text-primary flex-shrink-0" />
+                <span>support@jju.edu.et</span>
+              </li>
+              <li className="flex items-center gap-3 text-sm text-muted-foreground">
+                <Phone className="w-4 h-4 text-primary flex-shrink-0" />
+                <span>+251 25 775 2020</span>
+              </li>
+            </ul>
           </div>
         </div>
 
-        {/* Copyright Section */}
-        <div className="mt-8 pt-8 border-t border-gray-200 text-center">
-          <p className="text-gray-600 dark:text-white">
-            © {new Date().getFullYear()} JJU. All rights reserved.
+        {/* Bottom Bar */}
+        <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-sm text-muted-foreground text-center md:text-left">
+            © {new Date().getFullYear()} Jigjiga University. All rights
+            reserved.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Made with dedication for JJU students
           </p>
         </div>
       </div>
     </footer>
   );
-};
-
-export default Footer;
+}

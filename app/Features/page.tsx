@@ -1,4 +1,4 @@
-import { Layout } from "@/components/layout/Layout";
+"use client";
 import {
   FileText,
   Search,
@@ -13,8 +13,10 @@ import {
   Lock,
   Headphones,
 } from "lucide-react";
-import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+
 import { cn } from "@/lib/utils";
+import { useScrollAnimation } from "@/hooks/use-Scroll-Animation";
+import { Layout } from "@/components/collection/layouts/layout";
 
 const mainFeatures = [
   {

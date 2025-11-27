@@ -9,7 +9,7 @@ export function HeroSection() {
   const { ref, isVisible } = useScrollAnimation();
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-primary/90 text-primary-foreground">
+    <section className="relative overflow-hidden h-max-screen bg-gradient-to-br from-primary via-primary to-primary/90 text-primary-foreground py-28">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary-foreground rounded-full blur-3xl" />
@@ -27,7 +27,7 @@ export function HeroSection() {
 
           <h1
             className={cn(
-              "font-heading text-5xl md:text-6xl lg:text-6xl font-bold mb-6 opacity-0",
+              "font-heading text-6xl md:text-8xl lg:text-6xl font-bold mb-6 opacity-0",
               isVisible && "animate-fade-in-up animation-delay-100"
             )}
           >
@@ -37,7 +37,7 @@ export function HeroSection() {
 
           <p
             className={cn(
-              "text-xl md:text-xl text-primary-foreground/90 mb-8 max-w-2xl mx-auto opacity-0",
+              "text-2xl md:text-xl text-primary-foreground/90 mb-8 max-w-2xl mx-auto opacity-0",
               isVisible && "animate-fade-in-up animation-delay-200"
             )}
           >
@@ -52,18 +52,19 @@ export function HeroSection() {
               isVisible && "animate-fade-in-up animation-delay-300"
             )}
           >
-            <Button asChild variant="outline" className="text-gray-500">
+            <Button asChild variant="outline"
+              className=" hover:text-green-700 px-8 py-6 bg-transparent hover:bg-white border-white border-2 ">
               <Link href="/steps">
-                Apply Now <ArrowRight className="w-6 h-6" />
+                Apply Now <ArrowRight className="w-12 h-12" />
               </Link>
             </Button>
             <Button
               asChild
               variant="ghost"
           
-              className="text-primary-foreground hover:bg-primary-foreground/10"
+              className="text-primary-foreground hover:bg-primary-foreground/10 p-6 hover:text-white"
             >
-              <Link href="/status">Track Application</Link>
+              <Link href="/status" >Track Application</Link>
             </Button>
           </div>
 

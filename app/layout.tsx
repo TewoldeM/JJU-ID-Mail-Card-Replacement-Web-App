@@ -5,7 +5,6 @@ import Roouteproviders from "@/components/collection/Providers/RooutProvider";
 import ServerNavbar from "./UserProfile/Navbarfetchuser/page";
 import Providers from "@/components/collection/Providers/Providers";
 import { Toaster } from "react-hot-toast";
-import Footerpage from "./Footer/footer";
 
 // Load local fonts
 const geistSans = localFont({
@@ -71,9 +70,7 @@ export default function RootLayout({
                 },
               }}
             />
-
             {children}
-
           </Roouteproviders>
         </Providers>
       </body>
