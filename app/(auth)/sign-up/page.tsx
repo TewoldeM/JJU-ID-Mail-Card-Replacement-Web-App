@@ -1,11 +1,12 @@
 "use client";
 
-import SignUpForm from "@/components/collection/Auth/signup";
+import Auth from "@/components/collection/Auth/auth";
+
 
 export default function SignupPage() {
   return (
     <div className="flex flex-col justify-center items-center py-12">
-      <SignUpForm />
+      <Auth defaultMode="signup" />;
     </div>
   );
 }

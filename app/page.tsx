@@ -11,6 +11,7 @@ import { TestimonialsSection } from "@/components/collection/layouts/sections/Te
 import { FAQSection } from "@/components/collection/layouts/sections/FAQSection";
 import { CTASection } from "@/components/collection/layouts/sections/CTASection";
 import { WhyChooseSection } from "@/components/collection/layouts/sections/WhyChooseSection";
+import { Footer } from "@/components/collection/layouts/Footer";
 
 export default function UserProfile() {
   const router = useRouter();
@@ -74,6 +75,7 @@ export default function UserProfile() {
       <TestimonialsSection />
       <FAQSection />
       <CTASection />
+      <Footer />
     </>
   );
 }

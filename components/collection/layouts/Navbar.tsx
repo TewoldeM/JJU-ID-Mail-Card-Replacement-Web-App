@@ -7,7 +7,12 @@ import { useTheme } from "@/hooks/useTheme";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const navLinks = [
+interface NavLink {
+  name: string;
+  path: string;
+}
+
+let navLinks: NavLink[] = [
   { name: "Home", path: "/" },
   { name: "About", path: "/About" },
   { name: "Features", path: "/Features" },
@@ -16,10 +21,23 @@ const navLinks = [
   { name: "Contact", path: "/Contact" },
 ];
 
-export function Navbar() {
+interface NavbarProps {
+  userRole: "ADMIN" | "STUDENT" | null;
+}
+
+export function Navbar({ userRole }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
-  const pathname= usePathname();
+  const pathname = usePathname();
+
+  // Dynamically adjust nav links based on user role
+  const links = [...navLinks];
+  if (userRole === "ADMIN") {
+    links.push({ name: "Admin Panel", path: "/Admin/AdminDashboard" });
+  }
+  if (userRole === "STUDENT") {
+    links.push({ name: "Dashboard", path: "/" });
+  }
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass-effect">
@@ -42,7 +60,7 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-1">
-            {navLinks.map((link) => (
+            {links.map((link) => (
               <Link
                 key={link.path}
                 href={link.path}
@@ -73,9 +91,15 @@ export function Navbar() {
               )}
             </Button>
 
-            <Button className="hidden md:flex" size="lg">
-              Sign In
-            </Button>
+            {!userRole ? (
+              <Button asChild className="hidden md:flex" size="lg">
+                <Link href="/sign-in">Sign In</Link>
+              </Button>
+            ) : (
+              <Button asChild className="hidden md:flex" size="lg">
+                <Link href="/logout">Logout</Link>
+              </Button>
+            )}
 
             {/* Mobile Menu Button */}
             <Button
@@ -97,14 +121,14 @@ export function Navbar() {
         {isOpen && (
           <div className="lg:hidden py-4 border-t border-border animate-fade-in-down">
             <div className="flex flex-col gap-1">
-              {navLinks.map((link) => (
+              {links.map((link) => (
                 <Link
                   key={link.path}
                   href={link.path}
                   onClick={() => setIsOpen(false)}
                   className={cn(
                     "px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
-                    location.pathname === link.path
+                    pathname === link.path
                       ? "bg-primary text-primary-foreground"
                       : "text-foreground hover:bg-accent"
                   )}
@@ -112,9 +136,15 @@ export function Navbar() {
                   {link.name}
                 </Link>
               ))}
-              <Button className="mt-4" size="lg">
-                Sign In
-              </Button>
+              {!userRole ? (
+                <Button asChild className="mt-4" size="lg">
+                  <Link href="/sign-in">Sign In</Link>
+                </Button>
+              ) : (
+                <Button asChild className="mt-4" size="lg">
+                  <Link href="/logout">Logout</Link>
+                </Button>
+              )}
             </div>
           </div>
         )}

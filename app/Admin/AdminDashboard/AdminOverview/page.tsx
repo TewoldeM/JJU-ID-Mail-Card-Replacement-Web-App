@@ -19,7 +19,7 @@ const AdminOverview = ({ searchParams }: AdminOverviewProps) => {
   });
 
   return (
-    <div className="">
+    <div className="px-8">
       <div className="container flex flex-col lg:flex-row md:flex-row flex-wrap gap-0 py-0 lg:items-end lg:justify-between lg:gap-2 lg:py-2 ">
         <h2 className="text-3xl font-bold ml-6 mt-2">Overview</h2>
         <div className="flex items-center gap-3 mt-12 mb-1 ml-4">

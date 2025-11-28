@@ -1,3 +1,4 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,159 +21,89 @@ import {
   FileText,
 } from "lucide-react";
 import { Layout } from "@/components/collection/layouts/layout";
+import { useScrollAnimation } from "@/hooks/use-Scroll-Animation";
 import Link from "next/link";
-import Image from "next/image";
-import { PrismaClient, FileCategory } from "@prisma/client";
 
-const prisma = new PrismaClient();
-interface ApplicationDetailsProps {
-  params: { id: string };
-}
-
-export default async function ApplicationDetails({
-  params,
-}: ApplicationDetailsProps) {
-  const id = params.id;
-  const application = await prisma.application.findUnique({
-    where: { id },
-    include: {
-      user: true,
-      files: {
-        where: {
-          fileCategory: FileCategory.PHOTOGRAPH,
-        },
-        take: 1,
-      },
-    },
-  });
-
-  if (!application) {
-    return (
-      <div className="h-screen text-2xl text-red-400">
-        Application not found
-      </div>
-    );
-  }
-
-  const submittedPhoto = application.files[0]?.fileData
-    ? `data:image/jpeg;base64,${application.files[0].fileData}`
-    : "/placeholder.svg";
-
-  const createdDate = new Date(application.createdAt);
-  const year = createdDate.getFullYear();
-  const approvalCode =
-    application.status === "ACCEPTED"
-      ? `JJU-${year}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
-      : undefined;
-
-  const status = application.status.toLowerCase();
-
-  let timeline = [
+// Demo data - in real app this would come from API/database
+const applicationData = {
+  id: "APP-2025-001234",
+  type: "ID_CARD_REPLACEMENT",
+  typeLabel: "ID Card Replacement",
+  reason: "Expired",
+  createdAt: "2025-05-24",
+  status: "accepted",
+  approvalCode: "JJU-2025-ABC123",
+  submittedPhoto: "/placeholder.svg",
+  user: {
+    firstName: "Tewolde",
+    lastName: "Marie",
+    email: "tewoldemarie6@gmail.com",
+    phone: "0925233133",
+    studentId: "3569",
+    year: "3rd Year",
+    college: "College of Engineering and Technology",
+    department: "Software Engineering",
+  },
+  timeline: [
     {
       status: "submitted",
-      date: createdDate.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }),
-      time: createdDate.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      date: "2025-05-24",
+      time: "10:30 AM",
       completed: true,
     },
-  ];
-
-  if (["under_review", "accepted", "rejected"].includes(status)) {
-    const reviewDate = new Date(createdDate.getTime() + 86400000);
-    timeline.push({
+    {
       status: "under_review",
-      date: reviewDate.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }),
+      date: "2025-05-25",
       time: "09:00 AM",
       completed: true,
-    });
-  }
-
-  if (status === "accepted" || status === "rejected") {
-    const decideDate = new Date(createdDate.getTime() + 2 * 86400000);
-    timeline.push({
-      status: status === "accepted" ? "approved" : "rejected",
-      date: decideDate.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }),
+    },
+    {
+      status: "approved",
+      date: "2025-05-26",
       time: "02:15 PM",
       completed: true,
-    });
-  }
-
-  if (status === "accepted") {
-    const readyDate = new Date(createdDate.getTime() + 3 * 86400000);
-    timeline.push({
+    },
+    {
       status: "ready_for_collection",
-      date: readyDate.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }),
+      date: "2025-05-27",
       time: "11:00 AM",
       completed: false,
-    });
-  }
+    },
+  ],
+};
 
-  const applicationData = {
-    id: application.id,
-    type: application.applicationType,
-    typeLabel: application.applicationType.replace(/_/g, " "),
-    reason: application.reason,
-    createdAt: createdDate.toISOString().split("T")[0],
-    status,
-    approvalCode,
-    submittedPhoto,
-    user: {
-      firstName: application.user.FirstName,
-      lastName: application.user.LastName,
-      email: application.user.Email,
-      phone: application.user.PhoneNumber || "N/A",
-      studentId: application.user.StudentId.padStart(4, "0"),
-      year: application.user.Year || "N/A",
-      college: application.Collage,
-      department: application.Department || "N/A",
-    },
-    timeline,
-  };
+const statusConfig = {
+  pending: {
+    color: "bg-warning/20 text-warning border-warning/30",
+    icon: Clock,
+    label: "Pending Review",
+  },
+  under_review: {
+    color: "bg-info/20 text-info border-info/30",
+    icon: AlertCircle,
+    label: "Under Review",
+  },
+  accepted: {
+    color: "bg-primary/20 text-primary border-primary/30",
+    icon: CheckCircle2,
+    label: "Accepted",
+  },
+  rejected: {
+    color: "bg-destructive/20 text-destructive border-destructive/30",
+    icon: XCircle,
+    label: "Rejected",
+  },
+};
 
-  const statusConfig = {
-    pending: {
-      color: "bg-warning/20 text-warning border-warning/30",
-      icon: Clock,
-      label: "Pending Review",
-    },
-    under_review: {
-      color: "bg-info/20 text-info border-info/30",
-      icon: AlertCircle,
-      label: "Under Review",
-    },
-    accepted: {
-      color: "bg-primary/20 text-primary border-primary/30",
-      icon: CheckCircle2,
-      label: "Accepted",
-    },
-    rejected: {
-      color: "bg-destructive/20 text-destructive border-destructive/30",
-      icon: XCircle,
-      label: "Rejected",
-    },
-  };
+export default function ApplicationDetails() {
+  const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
+  const { ref: detailsRef, isVisible: detailsVisible } = useScrollAnimation();
+  const { ref: userRef, isVisible: userVisible } = useScrollAnimation();
+  const { ref: timelineRef, isVisible: timelineVisible } = useScrollAnimation();
 
-  const stat =
+  const status =
     statusConfig[applicationData.status as keyof typeof statusConfig];
-  const StatusIcon = stat.icon;
+  const StatusIcon = status.icon;
 
   return (
     <Layout>
@@ -180,8 +111,11 @@ export default async function ApplicationDetails({
         <div className="section-padding">
           <div className="container-custom">
             {/* Back Navigation */}
-            <div className="mb-8">
-              <Link href="/Admin/Applications-Data-Table">
+            <div
+              ref={headerRef}
+              className={`mb-8 opacity-0 ${headerVisible ? "animate-fade-in-down" : ""}`}
+            >
+              <Link href="/status">
                 <Button variant="ghost" className="gap-2 hover:bg-primary/10">
                   <ArrowLeft className="w-4 h-4" />
                   Back to Applications
@@ -190,16 +124,19 @@ export default async function ApplicationDetails({
             </div>
 
             {/* Header Section */}
-            <div className="mb-8">
+            <div
+              className={`mb-8 opacity-0 ${headerVisible ? "animate-fade-in-up" : ""}`}
+              style={{ animationDelay: "100ms" }}
+            >
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-sm text-muted-foreground font-mono">
                       {applicationData.id}
                     </span>
-                    <Badge className={`${stat.color} border`}>
+                    <Badge className={`${status.color} border`}>
                       <StatusIcon className="w-3 h-3 mr-1" />
-                      {stat.label}
+                      {status.label}
                     </Badge>
                   </div>
                   <h1 className="text-3xl md:text-4xl font-bold text-foreground">
@@ -235,7 +172,10 @@ export default async function ApplicationDetails({
               {/* Main Content */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Application Details Card */}
-                <div>
+                <div
+                  ref={detailsRef}
+                  className={`opacity-0 ${detailsVisible ? "animate-fade-in-up" : ""}`}
+                >
                   <Card className="overflow-hidden border-border/50 shadow-lg">
                     <CardHeader className="bg-gradient-to-r from-primary/10 to-accent border-b border-border/50">
                       <CardTitle className="flex items-center gap-2 text-lg">
@@ -293,11 +233,9 @@ export default async function ApplicationDetails({
                             Submitted Photo
                           </p>
                           <div className="w-32 h-40 rounded-lg overflow-hidden border-2 border-primary/30 shadow-md">
-                            <Image
+                            <img
                               src={applicationData.submittedPhoto}
                               alt="Student Photo"
-                              width={128}
-                              height={160}
                               className="w-full h-full object-cover"
                             />
                           </div>
@@ -329,7 +267,11 @@ export default async function ApplicationDetails({
                 </div>
 
                 {/* User Information Card */}
-                <div>
+                <div
+                  ref={userRef}
+                  className={`opacity-0 ${userVisible ? "animate-fade-in-up" : ""}`}
+                  style={{ animationDelay: "200ms" }}
+                >
                   <Card className="overflow-hidden border-border/50 shadow-lg">
                     <CardHeader className="bg-gradient-to-r from-primary/10 to-accent border-b border-border/50">
                       <CardTitle className="flex items-center gap-2 text-lg">
@@ -429,7 +371,10 @@ export default async function ApplicationDetails({
 
               {/* Sidebar - Timeline */}
               <div className="lg:col-span-1">
-                <div className="sticky top-24">
+                <div
+                  ref={timelineRef}
+                  className={`sticky top-24 opacity-0 ${timelineVisible ? "animate-slide-in-right" : ""}`}
+                >
                   <Card className="overflow-hidden border-border/50 shadow-lg">
                     <CardHeader className="bg-gradient-to-r from-primary/10 to-accent border-b border-border/50">
                       <CardTitle className="flex items-center gap-2 text-lg">
@@ -490,25 +435,28 @@ export default async function ApplicationDetails({
                       <CardTitle className="text-lg">Quick Actions</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 space-y-3">
-                      <Link href="/Admin/AdminDashboard" className="block">
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start gap-2"
-                        >
-                          <ArrowLeft className="w-4 h-4" />
-                          Back to Dashboard
-                        </Button>
-                      </Link>
-                      <Link
-                        href="/Admin/Applications-Data-Table"
-                        className="block"
-                      >
+                      <Link href="/status" className="block">
                         <Button
                           variant="outline"
                           className="w-full justify-start gap-2"
                         >
                           <ArrowLeft className="w-4 h-4" />
                           Back to All Applications
+                        </Button>
+                      </Link>
+                      <Link href="/contact" className="block">
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start gap-2"
+                        >
+                          <Mail className="w-4 h-4" />
+                          Contact Support
+                        </Button>
+                      </Link>
+                      <Link href="/" className="block">
+                        <Button className="w-full justify-start gap-2">
+                          <CreditCard className="w-4 h-4" />
+                          New Application
                         </Button>
                       </Link>
                     </CardContent>

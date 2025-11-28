@@ -11,8 +11,9 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import Layout from "../layout";
+
 import { useScrollAnimation } from "@/hooks/use-Scroll-Animation";
+import { Layout } from "@/components/collection/layouts/layout";
 
 const benefits = [
   {

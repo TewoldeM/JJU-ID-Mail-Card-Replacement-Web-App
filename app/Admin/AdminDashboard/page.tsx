@@ -5,7 +5,7 @@ import History from "./History-Monthly-yearly/History";
 
 const Adminpage = async () => {
   return (
-    <div className="h-full bg-background mb-4">
+    <div className="h-full bg-background mb-4 pt-20 md:pt-28">
       <div className="border-b bg-card">
         <div className="container flex flex-wrap items-center justify-between gap-6 py-8 px-4">
           <p className="text-3xl font-bold ml-2">Hello, Admin 🙋‍♂️</p>

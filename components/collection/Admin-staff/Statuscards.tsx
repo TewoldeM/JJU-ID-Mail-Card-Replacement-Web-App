@@ -18,7 +18,7 @@ interface StatuscardsProps {
 const Statuscards = ({ counts }: StatuscardsProps) => {
   return (
     <div className="relative flex w-full flex-wrap gap-2 md:flex-nowrap ">
-        <div className="flex gap-12 md:gap-44 md:flex-row flex-col justify-center items-center p-2 mb-2">
+        <div className="flex gap-8 md:gap-32 md:flex-row flex-col justify-center items-center p-2 mb-2">
           <div>
             <StatusCard
               title="Pending"
@@ -65,7 +65,7 @@ export default Statuscards;
 
 function StatusCard({ title,value,icon, }: {  title: string;  value: number;  icon: React.ReactNode;}) {
   return (
-      <Card className="flex items-center justify-center gap-4 py-2 px-8 lg:px-20 lg:py-8 ">
+      <Card className="flex items-center justify-center gap-2 py-2 px-12 lg:px-20 lg:py-8 ">
         {icon}
         <div className="flex flex-col items-start gap-0">
         <p className="text-muted-foreground text-xl">{title}</p>

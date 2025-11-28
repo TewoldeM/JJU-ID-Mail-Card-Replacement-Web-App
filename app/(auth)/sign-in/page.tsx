@@ -1,11 +1,12 @@
 "use client";
 
-import SignInForm from "@/components/collection/Auth/signin";
+import Auth from "@/components/collection/Auth/auth";
+
 
 export default function SignIn() {
   return (
     <div className="flex flex-col justify-center items-center py-12">
-      <SignInForm />
+      <Auth defaultMode="signin" />;{" "}
     </div>
   );
 }
