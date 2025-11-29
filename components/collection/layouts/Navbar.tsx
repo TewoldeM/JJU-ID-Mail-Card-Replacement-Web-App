@@ -62,7 +62,7 @@ export function Navbar({ userRole }: NavbarProps) {
           <div className="hidden lg:flex items-center gap-1">
             {links.map((link) => (
               <Link
-                key={link.path}
+                key={link.name}
                 href={link.path}
                 className={cn(
                   "px-6 py-2 rounded-lg text-lg font-medium transition-all duration-200",

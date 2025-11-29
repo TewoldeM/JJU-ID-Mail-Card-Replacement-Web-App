@@ -70,36 +70,38 @@ const StudentDashboardPage = async () => {
       </div>
     );
   }
+  // ✅ Manual serialization (OPTION 1)
+  const serializedUser = {
+    Id: user.Id,
+    FirstName: user.FirstName,
+    LastName: user.LastName,
+    Email: user.Email,
+    PhoneNumber: user.PhoneNumber,
+    StudentId: user.StudentId,
 
+    Applications: user.Applications.map((app) => ({
+      id: app.id,
+      applicationType: app.applicationType,
+      status: app.status,
+      createdAt: app.createdAt.toISOString(),
+      updatedAt: app.updatedAt.toISOString(),
+    })),
+
+    Roles: user.Roles.map((role) => ({
+      Id: role.id,
+      Name: role.name,
+    })),
+
+    Notifications: user.Notifications.map((notification) => ({
+      id: notification.id,
+      message: notification.message,
+      read: notification.read,
+      createdAt: notification.createdAt.toISOString(),
+    })),
+  };
   return (
     <div>
-      <StudentDashboard
-        user={{
-          Id: user.Id,
-          FirstName: user.FirstName,
-          LastName: user.LastName,
-          Email: user.Email,
-          PhoneNumber: user.PhoneNumber,
-          StudentId: user.StudentId,
-          Applications: user.Applications.map((app) => ({
-            id: app.id,
-            applicationType: app.applicationType,
-            status: app.status,
-            createdAt: app.createdAt,
-            updatedAt: app.updatedAt,
-          })),
-          Roles: user.Roles.map((role) => ({
-            Id: role.id,
-            Name: role.name,
-          })),
-          Notifications: user.Notifications.map((notification) => ({
-            id: notification.id,
-            message: notification.message,
-            read: notification.read, // Include the 'read' property
-            createdAt: notification.createdAt,
-          })),
-        }}
-      />
+      <StudentDashboard user={serializedUser} />
     </div>
   );
 };
